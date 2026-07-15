@@ -110,7 +110,7 @@ flowchart TD
 | **W6** | 애니메이션 · 폴리시 · 승리조건 | "완성"처럼 보이는 세로 슬라이스 | ⬜ |
 | **W7~8** | 문서화 · 데모 영상 · 배포 (버퍼) | 제출 가능한 포폴 | ⬜ |
 
-상세 태스크 분해는 [`docs/작업계획.md`](docs/작업계획.md) 참고. 단계별 진행 기록은 [`docs/개발기록.md`](docs/개발기록.md).
+상세 태스크 분해는 [`docs/작업계획.md`](docs/작업계획.md) 참고. 주차별 진행 기록은 `docs/Week*.md` (예: [`Week0-DOTS셋업.md`](docs/Week0-DOTS셋업.md)).
 
 ---
 
@@ -142,10 +142,10 @@ Assets/
   Scenes/
     Main.unity                        # EnemySubScene(SubScene) 포함
 docs/
-  작업계획.md    # 실행 계획 (기획 → 작업 분해)
-  협업방식.md    # 작업 합의 (짝 프로그래밍 + 검수)
-  개발기록.md    # 단계별 진행 로그
-  images/        # 진행 스크린샷
+  작업계획.md         # 실행 계획 (기획 → 작업 분해)
+  협업방식.md         # 작업 합의 (짝 프로그래밍 + 검수)
+  Week0-DOTS셋업.md   # 주차별 진행 기록 (Week1-... 로 이어짐)
+  images/            # 진행 스크린샷
 ```
 
 > 현재 구조는 Week 0 기준. Systems/Authoring/Bridge 및 Player/UI/Benchmark 어셈블리는 해당 주차에 추가된다.
