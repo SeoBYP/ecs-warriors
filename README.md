@@ -101,8 +101,8 @@ flowchart TD
 
 | 주차 | 내용 | 산출물 | 상태 |
 |---|---|---|---|
-| **W0** | DOTS 셋업 · 폴더/asmdef · 스폰 렌더 파이프라인 | 캡슐 엔티티 인스턴싱 렌더 | 🟡 진행 중 |
-| **W1** | 스폰 시스템 · 카운트 슬라이더 · FPS 오버레이 | 1만 마리 정적 렌더 | ⬜ |
+| **W0** | DOTS 셋업 · asmdef · 첫 컴포넌트 · SubScene 렌더 파이프라인 | 캡슐 엔티티 인스턴싱 렌더 | ✅ 완료 |
+| **W1** | 스폰 시스템 · 카운트 슬라이더 · FPS 오버레이 | 1만 마리 정적 렌더 | 🟡 진행 중 |
 | **W2** | 군중 이동 · Spatial Grid (+ `bench/01-naive` 분기) | 수천 마리 군집 추적 | ⬜ |
 | **W3** | GO 플레이어 · 공격↔ECS 브릿지 · 데미지/사망 | 핵심 게임루프 성립 | ⬜ |
 | **W4** | 경직/넉백 · 광역기 · 미니보스 · 사망 연출 | 광역기 한 방에 화면 정리 | ⬜ |
@@ -110,29 +110,45 @@ flowchart TD
 | **W6** | 애니메이션 · 폴리시 · 승리조건 | "완성"처럼 보이는 세로 슬라이스 | ⬜ |
 | **W7~8** | 문서화 · 데모 영상 · 배포 (버퍼) | 제출 가능한 포폴 | ⬜ |
 
-상세 태스크 분해는 [`docs/작업계획.md`](docs/작업계획.md) 참고.
+상세 태스크 분해는 [`docs/작업계획.md`](docs/작업계획.md) 참고. 단계별 진행 기록은 [`docs/개발기록.md`](docs/개발기록.md).
 
 ---
 
-## 프로젝트 구조 (계획)
+## 개발 진행
+
+### Week 0 — DOTS 셋업 & 첫 엔티티 렌더 ✅
+
+빈 URP 프로젝트에서 시작해 **SubScene 베이킹으로 만든 엔티티를 Entities Graphics로 렌더**하는 데까지. 커스텀 코드 없이 캡슐 GameObject가 엔티티(`LocalTransform` + `RenderMeshArray` + `MaterialMeshInfo`)로 변환되어 GPU 인스턴싱으로 그려진다.
+
+![Week 0 — 첫 ECS 엔티티 렌더](docs/images/week0-first-entity-render.png)
+
+- DOTS 6.5.0 설치 + 버전 확정 · Unity CLI Loop(CLI 모드) 검증 파이프라인 구축
+- `ECSWarriors.Simulation` asmdef (참조 5개) · 첫 unmanaged 컴포넌트 `Enemy`/`Velocity`
+- `EnemySubScene` 베이킹 → 캡슐 엔티티 렌더 확인
+
+---
+
+## 프로젝트 구조
 
 ```
 Assets/
-  ECSWarriors/
-    Runtime/
-      Components/     # IComponentData, IBufferElementData, tag
-      Systems/        # Spawning / Movement / Spatial / Combat
-      Authoring/      # Baker + Authoring MonoBehaviour
-      Bridge/         # GO ↔ ECS 브릿지 (싱글톤, 이벤트 소비)
-    Player/           # GameObject 플레이어 (MonoBehaviour)
-    UI/               # HUD, FPS 오버레이, 카운트 슬라이더
-    Benchmark/        # 측정 하니스, 프레임타임 로거
+  Scripts/
+    Simulation/                       # ECS 코어 (ECSWarriors.Simulation asmdef)
+      Components/                     #   Enemy, Velocity, ... (IComponentData)
+      Systems/                        #   Spawn / Movement / Spatial / Combat  (예정)
+      Authoring/                      #   Baker + Authoring MonoBehaviour       (예정)
+      Bridge/                         #   GO ↔ ECS 브릿지 (싱글톤, 이벤트 소비)   (예정)
+    # Player / UI / Benchmark 어셈블리는 Week 3+에 추가
   Scenes/
-    Main.unity
-    _SubScenes/       # ECS 베이킹용 SubScene
+    Main.unity                        # EnemySubScene(SubScene) 포함
 docs/
-  작업계획.md          # 개발 작업 계획서 (기획 → 실행 분해)
+  작업계획.md    # 실행 계획 (기획 → 작업 분해)
+  협업방식.md    # 작업 합의 (짝 프로그래밍 + 검수)
+  개발기록.md    # 단계별 진행 로그
+  images/        # 진행 스크린샷
 ```
+
+> 현재 구조는 Week 0 기준. Systems/Authoring/Bridge 및 Player/UI/Benchmark 어셈블리는 해당 주차에 추가된다.
 
 ---
 
