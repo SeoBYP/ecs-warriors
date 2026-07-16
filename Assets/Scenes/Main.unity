@@ -1032,9 +1032,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cea478e43b4a92e40a62fd70f52a21ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Benchmark.BenchmarkHarness
-  Label: grid
-  WarmupFrames: 300
-  SampleFrames: 300
+  Label: naive
+  Counts: e8030000c40900008813000010270000
+  WarmupFrames: 240
+  SampleFrames: 120
 --- !u!4 &1611971075
 Transform:
   m_ObjectHideFlags: 0
