@@ -626,6 +626,7 @@ GameObject:
   - component: {fileID: 645119400}
   - component: {fileID: 645119399}
   - component: {fileID: 645119402}
+  - component: {fileID: 645119403}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -717,6 +718,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cfe6ecd9515f4cc58c2fe458636d6ec4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Components.PlayerStateBridge
+--- !u!114 &645119403
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 645119397}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f16969e7c2f340a49f64dbe385a4258e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Components.PlayerAttackBridge
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0

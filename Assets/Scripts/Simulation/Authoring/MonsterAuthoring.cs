@@ -15,11 +15,12 @@ namespace Simulation.Components
         {
             var entity = GetEntity(TransformUsageFlags.Dynamic);
             AddComponent<Enemy>(entity);
-            AddComponent<MoveStats>(entity, new MoveStats
+            AddComponent(entity, new MoveStats
             {
                 Speed = authoring.Speed,
                 StopDistance = authoring.StopDistance
             });
+            AddBuffer<DamageEvent>(entity);
         }
     }
 }
