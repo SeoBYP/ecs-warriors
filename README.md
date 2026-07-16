@@ -87,11 +87,23 @@ flowchart TD
 | ① 순진 | MonoBehaviour + O(n²) 근접탐색 | 메인스레드 CPU 포화 | 적 N마리별 프레임타임(ms) | 🚧 예정 |
 | ② ECS 전환 | Entities, 싱글스레드 | 캐시 미스↓ | 동일 | 🚧 예정 |
 | ③ Burst + Job | 병렬 잡 + SIMD | 워커스레드 활용 | 코어별 부하 분산 | 🚧 예정 |
-| ④ Spatial Hashing | 그리드 근접탐색 | 알고리즘 개선 | 근접탐색 잡 시간 | 🚧 예정 |
+| ④ Spatial Hashing | 그리드 근접탐색 | 알고리즘 개선 | 근접탐색 잡 시간 | ✅ **1만 @ 19.60ms → 6.26ms (3.13×)** |
 | ⑤ 렌더 최적화 | Entities Graphics 인스턴싱 | 드로우콜↓ | 드로우콜 수, GPU 타임 | 🚧 예정 |
 
-> ①단계 순진한 버전은 처음부터 별도 브랜치(`bench/01-naive`)로 유지 → 벤치마크의 출발점.
-> 측정 데이터·그래프·Profiler 캡처는 Week 5 최적화 스프린트에서 이 섹션에 채워집니다.
+> 순진한 버전은 별도 브랜치(`bench/01-naive`)로 유지 → 벤치마크의 출발점.
+
+### ④ Spatial Hash 실측 (동일 조건, 이웃 탐색 방법만 교체)
+
+| 적 수 | naive O(n²) | **grid** Spatial Hash | 개선 |
+|---:|---:|---:|---:|
+| 1,000 | 6.35 ms | 6.51 ms | 0.98× (손익분기점 미만) |
+| 2,500 | 7.60 ms | 6.14 ms | 1.24× |
+| 5,000 | 9.25 ms | 6.21 ms | 1.49× |
+| **10,000** | **19.60 ms (51 fps)** | **6.26 ms (160 fps)** | **3.13×** |
+
+**핵심은 기울기다** — grid는 1천이든 1만이든 **~6.2ms로 평평**(이웃 탐색 비용 ≈ 0), naive는 5천을 넘기며 무너진다. 원본: [`docs/benchmarks/week2-separation.csv`](docs/benchmarks/week2-separation.csv) · 분석: [`docs/Week2-이동-SpatialHash.md`](docs/Week2-이동-SpatialHash.md)
+
+> 정직한 관찰: naive도 **51 fps로 돈다**. 양쪽 다 Burst+SIMD+멀티코어를 쓰기 때문 — 즉 이건 "느린 O(n²) vs 빠른 알고리즘"이 아니라 **"Burst로 최적화된 O(n²) vs Burst + 알고리즘"** 의 비교다. 그리고 1,000마리에선 그리드가 **오히려 손해**다(해시맵 재구축 오버헤드). 최적화엔 손익분기점이 있다.
 
 **적 수 목표**: 화면 내 활성 1,500~3,000 + 총 5,000~10,000을 슬라이더로 조절, FPS 오버레이로 노출.
 
@@ -103,8 +115,8 @@ flowchart TD
 |---|---|---|---|
 | **W0** | DOTS 셋업 · asmdef · 첫 컴포넌트 · SubScene 렌더 파이프라인 | 캡슐 엔티티 인스턴싱 렌더 | ✅ 완료 |
 | **W1** | 스폰 시스템 · 카운트 슬라이더 · FPS 오버레이 | 1만 마리 @ ~156 FPS + 슬라이더 | ✅ 완료 |
-| **W2** | 군중 이동 · Spatial Grid (+ `bench/01-naive` 분기) | 수천 마리 군집 추적 | 🟡 진행 중 |
-| **W3** | GO 플레이어 · 공격↔ECS 브릿지 · 데미지/사망 | 핵심 게임루프 성립 | ⬜ |
+| **W2** | 군중 이동 · Spatial Grid (+ `bench/01-naive` 분기) | 1만 군집 @ 160fps + **④단계 벤치 3.13×** | ✅ 완료 |
+| **W3** | GO 플레이어 · 공격↔ECS 브릿지 · 데미지/사망 | 핵심 게임루프 성립 | 🟡 진행 중 |
 | **W4** | 경직/넉백 · 광역기 · 미니보스 · 사망 연출 | 광역기 한 방에 화면 정리 | ⬜ |
 | **W5** | 🔬 최적화 스프린트 (①~⑤ 측정·개선) | 벤치마크 데이터셋 | ⬜ |
 | **W6** | 애니메이션 · 폴리시 · 승리조건 | "완성"처럼 보이는 세로 슬라이스 | ⬜ |
@@ -136,6 +148,16 @@ flowchart TD
 - `SpawnSystem`(목표 수 유지: spawn/despawn diff) · `FpsOverlay`(GC-free)
 - `SpawnCountSlider`: 슬라이더 → `SpawnConfig.Count`(GO→ECS 쓰기) + Update 폴링으로 적 수 Text 표시(ECS→GO 읽기)
 - **🔬 1만 마리 @ ~120–156 FPS** (GPU 인스턴싱) → 상세 [`docs/Week1-스폰.md`](docs/Week1-스폰.md)
+
+### Week 2 — 군중 이동 · Spatial Hash · 벤치마크 ④ ✅
+
+`IJobEntity` + Burst로 1만 마리를 병렬 이동시키고, **Spatial Hash Grid**(셀 크기 = 회피 반경)로 이웃을 3×3 셀만 조회해 회피시킨다. 한 점에 뭉치던 덩어리가 **균일한 원반 군집**으로 펴진다.
+
+![Week 2 — 1만 마리 이웃 회피 군집](docs/images/week2-crowd-separation.png)
+
+- `MovementSystem`(IJobEntity+Burst+ScheduleParallel) — 등속 추적 + StopDistance 정지
+- `SpatialHashSystem` — `NativeParallelMultiHashMap` 매 프레임 재구축(ParallelWriter) → `SeparationJob`이 3×3 셀만 조회
+- **④단계 벤치마크 확보**: 1만에서 **19.60ms → 6.26ms (3.13×)**, grid는 적 수와 무관하게 평평 → 상세 [`docs/Week2-이동-SpatialHash.md`](docs/Week2-이동-SpatialHash.md)
 
 ---
 
