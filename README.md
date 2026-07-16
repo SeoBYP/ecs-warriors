@@ -102,8 +102,8 @@ flowchart TD
 | 주차 | 내용 | 산출물 | 상태 |
 |---|---|---|---|
 | **W0** | DOTS 셋업 · asmdef · 첫 컴포넌트 · SubScene 렌더 파이프라인 | 캡슐 엔티티 인스턴싱 렌더 | ✅ 완료 |
-| **W1** | 스폰 시스템 · 카운트 슬라이더 · FPS 오버레이 | 1만 마리 정적 렌더 | 🟡 진행 중 |
-| **W2** | 군중 이동 · Spatial Grid (+ `bench/01-naive` 분기) | 수천 마리 군집 추적 | ⬜ |
+| **W1** | 스폰 시스템 · 카운트 슬라이더 · FPS 오버레이 | 1만 마리 @ ~156 FPS + 슬라이더 | ✅ 완료 |
+| **W2** | 군중 이동 · Spatial Grid (+ `bench/01-naive` 분기) | 수천 마리 군집 추적 | 🟡 진행 중 |
 | **W3** | GO 플레이어 · 공격↔ECS 브릿지 · 데미지/사망 | 핵심 게임루프 성립 | ⬜ |
 | **W4** | 경직/넉백 · 광역기 · 미니보스 · 사망 연출 | 광역기 한 방에 화면 정리 | ⬜ |
 | **W5** | 🔬 최적화 스프린트 (①~⑤ 측정·개선) | 벤치마크 데이터셋 | ⬜ |
@@ -126,15 +126,16 @@ flowchart TD
 - `ECSWarriors.Simulation` asmdef (참조 5개) · 첫 unmanaged 컴포넌트 `Enemy`/`Velocity`
 - `EnemySubScene` 베이킹 → 캡슐 엔티티 렌더 확인
 
-### Week 1 — 스폰 시스템 & FPS 오버레이 🟡
+### Week 1 — 스폰 시스템 · FPS 오버레이 · 카운트 슬라이더 ✅
 
-몬스터 프리팹을 **엔티티 프리팹으로 베이킹**하고, `SpawnSystem`(`ISystem`)이 런타임에 `EntityManager.Instantiate`로 N마리를 스폰한다. FPS/ms 오버레이로 프레임타임을 노출.
+몬스터 프리팹을 **엔티티 프리팹으로 베이킹**하고, `SpawnSystem`(`ISystem`)이 런타임에 `SpawnConfig.Count`를 목표치로 삼아 **부족하면 스폰 / 넘치면 디스폰**한다. uGUI 슬라이더로 목표 수를 실시간 조절하고, Text로 현재 적 수를 표시.
 
-![Week 1 — 100마리 스폰 + FPS 오버레이](docs/images/week1-spawn-overlay.png)
+![Week 1 — 카운트 슬라이더 + FPS 오버레이 (5000마리 @ 121 FPS)](docs/images/week1-count-slider.png)
 
-- `Monster` 프리팹 + `SpawnAuthoring`/`SpawnBaker` → `SpawnConfig`(프리팹 핸들·수·반경) 베이킹
-- `SpawnSystem` 100마리 지면 분포 스폰 · `FpsOverlay`(GC-free, 128 FPS 확인)
-- **남은 것**: 카운트 슬라이더(목표 수 맞춤 스폰/제거) · 1만 마리 스트레스 테스트 → 상세 [`docs/Week1-스폰.md`](docs/Week1-스폰.md)
+- `Monster` 프리팹 + `SpawnAuthoring`/`SpawnBaker` → `SpawnConfig` 베이킹, `MonsterAuthoring`으로 `Enemy` 태그 부착
+- `SpawnSystem`(목표 수 유지: spawn/despawn diff) · `FpsOverlay`(GC-free)
+- `SpawnCountSlider`: 슬라이더 → `SpawnConfig.Count`(GO→ECS 쓰기) + Update 폴링으로 적 수 Text 표시(ECS→GO 읽기)
+- **🔬 1만 마리 @ ~120–156 FPS** (GPU 인스턴싱) → 상세 [`docs/Week1-스폰.md`](docs/Week1-스폰.md)
 
 ---
 
@@ -145,10 +146,10 @@ Assets/
   Scripts/
     Simulation/                       # ECS 코어 (ECSWarriors.Simulation asmdef)
       Components/                     #   Enemy, Velocity, SpawnConfig (IComponentData)
-      Authoring/                      #   SpawnAuthoring + SpawnBaker
+      Authoring/                      #   SpawnAuthoring/Baker · MonsterAuthoring/Baker
       Systems/                        #   SpawnSystem (ISystem)  · Movement/Spatial/Combat 예정
       # Bridge/ (GO↔ECS 브릿지)는 Week 3에 추가
-    UI/                               # FpsOverlay (MonoBehaviour) · 카운트 슬라이더 예정
+    UI/                               # FpsOverlay · SpawnCountSlider (MonoBehaviour)
   Prefabs/
     Monster.prefab                    # 스폰 원본(콜라이더 제거)
   Scenes/

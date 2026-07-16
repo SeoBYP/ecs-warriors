@@ -164,8 +164,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Components.SpawnAuthoring
   Prefab: {fileID: 2435691499837815509, guid: 552685c46573e844ba70c27d3cd569c4, type: 3}
-  Count: 100
-  Radius: 10
+  Count: 10000
+  Radius: 100
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -17,20 +17,33 @@ namespace Simulation.Systems
         {
             var config = SystemAPI.GetSingleton<SpawnConfig>();
             
-            var entities = state.EntityManager
-                .Instantiate(config.Prefab, config.Count, Allocator.Temp);
-            
-            var random = Random.CreateFromIndex(1);
-            for (var i = 0; i < entities.Length; i++)
+            int target  = config.Count;
+            var enemyQuery = SystemAPI.QueryBuilder().WithAll<Enemy>().Build();
+            int current = enemyQuery.CalculateEntityCount();
+
+            if (current < target)
             {
-                var entity = entities[i];
-                var x = random.NextFloat(-config.Radius, config.Radius);
-                var z = random.NextFloat(-config.Radius, config.Radius);
-                var position = new float3(x, 0 , z);
-                state.EntityManager.SetComponentData(entity, LocalTransform.FromPosition(position));
+                var count = target - current;
+                var entities = state.EntityManager
+                    .Instantiate(config.Prefab, count, Allocator.Temp);
+
+                var random = Random.CreateFromIndex(1);
+                
+                for (int i = 0; i < count; i++)
+                {
+                    var x = random.NextFloat(-config.Radius, config.Radius);
+                    var z = random.NextFloat(-config.Radius, config.Radius);
+                    var position = new float3(x, 0 , z);
+                    state.EntityManager.SetComponentData(entities[i], LocalTransform.FromPosition(position));
+                }
+            }
+            else if (current > target)
+            {
+                var count = current - target;
+                var removes = enemyQuery.ToEntityArray(Allocator.Temp);
+                state.EntityManager.DestroyEntity(removes.GetSubArray(0,count));
             }
             
-            state.Enabled = false;
         }
 
         public void OnDestroy(ref SystemState state)
