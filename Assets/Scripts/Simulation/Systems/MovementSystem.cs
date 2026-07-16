@@ -27,13 +27,20 @@ namespace Simulation.Systems
     [BurstCompile]
     public partial struct MovementSystem : ISystem
     {
+        public void OnCreate(ref SystemState state)
+        {
+            state.RequireForUpdate<PlayerState>();
+        }
+        
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
+            var player = SystemAPI.GetSingleton<PlayerState>();
+            
             new MoveJob
             {
                 DeltaTime = SystemAPI.Time.DeltaTime,
-                Target = float3.zero 
+                Target = player.Position, 
             }.ScheduleParallel();
         }
     }
