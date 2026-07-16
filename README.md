@@ -126,6 +126,16 @@ flowchart TD
 - `ECSWarriors.Simulation` asmdef (참조 5개) · 첫 unmanaged 컴포넌트 `Enemy`/`Velocity`
 - `EnemySubScene` 베이킹 → 캡슐 엔티티 렌더 확인
 
+### Week 1 — 스폰 시스템 & FPS 오버레이 🟡
+
+몬스터 프리팹을 **엔티티 프리팹으로 베이킹**하고, `SpawnSystem`(`ISystem`)이 런타임에 `EntityManager.Instantiate`로 N마리를 스폰한다. FPS/ms 오버레이로 프레임타임을 노출.
+
+![Week 1 — 100마리 스폰 + FPS 오버레이](docs/images/week1-spawn-overlay.png)
+
+- `Monster` 프리팹 + `SpawnAuthoring`/`SpawnBaker` → `SpawnConfig`(프리팹 핸들·수·반경) 베이킹
+- `SpawnSystem` 100마리 지면 분포 스폰 · `FpsOverlay`(GC-free, 128 FPS 확인)
+- **남은 것**: 카운트 슬라이더(목표 수 맞춤 스폰/제거) · 1만 마리 스트레스 테스트 → 상세 [`docs/Week1-스폰.md`](docs/Week1-스폰.md)
+
 ---
 
 ## 프로젝트 구조
@@ -134,21 +144,22 @@ flowchart TD
 Assets/
   Scripts/
     Simulation/                       # ECS 코어 (ECSWarriors.Simulation asmdef)
-      Components/                     #   Enemy, Velocity, ... (IComponentData)
-      Systems/                        #   Spawn / Movement / Spatial / Combat  (예정)
-      Authoring/                      #   Baker + Authoring MonoBehaviour       (예정)
-      Bridge/                         #   GO ↔ ECS 브릿지 (싱글톤, 이벤트 소비)   (예정)
-    # Player / UI / Benchmark 어셈블리는 Week 3+에 추가
+      Components/                     #   Enemy, Velocity, SpawnConfig (IComponentData)
+      Authoring/                      #   SpawnAuthoring + SpawnBaker
+      Systems/                        #   SpawnSystem (ISystem)  · Movement/Spatial/Combat 예정
+      # Bridge/ (GO↔ECS 브릿지)는 Week 3에 추가
+    UI/                               # FpsOverlay (MonoBehaviour) · 카운트 슬라이더 예정
+  Prefabs/
+    Monster.prefab                    # 스폰 원본(콜라이더 제거)
   Scenes/
-    Main.unity                        # EnemySubScene(SubScene) 포함
+    Main.unity                        # EnemySubScene(SubScene) — Spawner 포함
 docs/
   작업계획.md         # 실행 계획 (기획 → 작업 분해)
   협업방식.md         # 작업 합의 (짝 프로그래밍 + 검수)
-  Week0-DOTS셋업.md   # 주차별 진행 기록 (Week1-... 로 이어짐)
+  Week0-DOTS셋업.md   # 주차별 진행 기록
+  Week1-스폰.md       #   (Week2-... 로 이어짐)
   images/            # 진행 스크린샷
 ```
-
-> 현재 구조는 Week 0 기준. Systems/Authoring/Bridge 및 Player/UI/Benchmark 어셈블리는 해당 주차에 추가된다.
 
 ---
 

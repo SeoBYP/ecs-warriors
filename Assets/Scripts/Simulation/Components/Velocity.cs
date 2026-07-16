@@ -1,7 +1,10 @@
 using Unity.Entities;
 using Unity.Mathematics;
-
-public struct Velocity : IComponentData
+namespace Simulation.Components
 {
-    public float3 Value;
+    public struct Velocity : IComponentData
+    {
+        public float3 Value;
+    }
 }
+

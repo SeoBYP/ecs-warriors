@@ -1,6 +1,9 @@
 using Unity.Entities;
 
-public struct Enemy : IComponentData
+namespace Simulation.Components
 {
-    
+    public struct Enemy : IComponentData
+    {
+        
+    }
 }
