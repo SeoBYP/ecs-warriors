@@ -5,7 +5,16 @@
 ![Unity](https://img.shields.io/badge/Unity-6000.5.4f1-000000?logo=unity)
 ![Entities](https://img.shields.io/badge/Entities-6.5.0-blue)
 ![URP](https://img.shields.io/badge/URP-17.5.0-green)
-![Status](https://img.shields.io/badge/status-WIP%20(Week%200)-orange)
+![Status](https://img.shields.io/badge/status-WIP%20·%20Week%203-orange)
+
+## TL;DR
+
+> **적 10,000마리가 서로 회피하며 몰려드는 군중 시뮬레이션 @ 160 FPS (6.26 ms)** — `IJobEntity` + Burst 병렬 잡 + Spatial Hash 근접 탐색.
+>
+> 이웃 탐색을 O(n²) 전수 검사에서 **Spatial Hash Grid로 바꿔 1만 마리에서 19.60 ms → 6.26 ms (3.13×)**. 더 중요한 건 **기울기** — 그리드 버전은 적이 1천이든 1만이든 프레임타임이 **평평하다**.
+> → [측정 데이터](docs/benchmarks/week2-separation.csv) · [분석](docs/Week2-이동-SpatialHash.md)
+
+![1만 마리 이웃 회피 군집 @ 160fps](docs/images/week2-crowd-separation.png)
 
 ---
 
@@ -168,21 +177,27 @@ Assets/
   Scripts/
     Simulation/                       # ECS 코어 (ECSWarriors.Simulation asmdef)
       Components/                     #   Enemy, Velocity, SpawnConfig (IComponentData)
+      SpatialHash.cs                  #   셀 좌표·해시 유틸 (빌드/조회 공유)
       Authoring/                      #   SpawnAuthoring/Baker · MonsterAuthoring/Baker
-      Systems/                        #   SpawnSystem (ISystem)  · Movement/Spatial/Combat 예정
+      Systems/                        #   SpawnSystem · MovementSystem · SpatialHashSystem(+SeparationJob)
       # Bridge/ (GO↔ECS 브릿지)는 Week 3에 추가
     UI/                               # FpsOverlay · SpawnCountSlider (MonoBehaviour)
+    Benchmark/                        # BenchmarkHarness (적 수 자동 스윕 → [BENCH-CSV])
   Prefabs/
     Monster.prefab                    # 스폰 원본(콜라이더 제거)
   Scenes/
     Main.unity                        # EnemySubScene(SubScene) — Spawner 포함
 docs/
-  작업계획.md         # 실행 계획 (기획 → 작업 분해)
-  협업방식.md         # 작업 합의 (짝 프로그래밍 + 검수)
-  Week0-DOTS셋업.md   # 주차별 진행 기록
-  Week1-스폰.md       #   (Week2-... 로 이어짐)
-  images/            # 진행 스크린샷
+  작업계획.md              # 실행 계획 (기획 → 작업 분해)
+  협업방식.md              # 작업 합의 (짝 프로그래밍 + 검수)
+  Week0-DOTS셋업.md        # 주차별 진행 기록
+  Week1-스폰.md
+  Week2-이동-SpatialHash.md
+  benchmarks/             # 측정 원본 CSV
+  images/                 # 진행 스크린샷
 ```
+
+**브랜치**: `main`(최신 통합) · `bench/01-naive`(벤치마크 O(n²) 기준선 — 머지하지 않고 비교용 보존)
 
 ---
 
