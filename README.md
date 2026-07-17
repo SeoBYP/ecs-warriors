@@ -5,14 +5,15 @@
 ![Unity](https://img.shields.io/badge/Unity-6000.5.4f1-000000?logo=unity)
 ![Entities](https://img.shields.io/badge/Entities-6.5.0-blue)
 ![URP](https://img.shields.io/badge/URP-17.5.0-green)
-![Status](https://img.shields.io/badge/status-WIP%20·%20Week%203-orange)
+![Status](https://img.shields.io/badge/status-WIP%20·%20Week%204-orange)
 
 ## TL;DR
 
-> **적 10,000마리가 서로 회피하며 몰려드는 군중 시뮬레이션 @ 160 FPS (6.26 ms)** — `IJobEntity` + Burst 병렬 잡 + Spatial Hash 근접 탐색.
+> **적 10,000마리가 서로 회피하며 몰려들고, 플레이어와 서로 주고받는 양방향 전투 @ 107 FPS (9.37 ms)** — `IJobEntity` + Burst 병렬 잡 + Spatial Hash 근접 탐색.
 >
 > 이웃 탐색을 O(n²) 전수 검사에서 **Spatial Hash Grid로 바꿔 1만 마리에서 19.60 ms → 6.26 ms (3.13×)**. 더 중요한 건 **기울기** — 그리드 버전은 적이 1천이든 1만이든 프레임타임이 **평평하다**.
-> → [측정 데이터](docs/benchmarks/week2-separation.csv) · [분석](docs/Week2-이동-SpatialHash.md)
+> 그리고 그 위에 **전투 시스템(1만 마리 거리 판정 + 데미지 적용)을 얹어도 기울기는 여전히 0**이다. 기울기를 가진 건 O(n²) naive뿐(**+13.25**).
+> → 측정 데이터: [Week2](docs/benchmarks/week2-separation.csv) · [Week3 A/B](docs/benchmarks/week3-combat-ab.csv) · 분석: [Week2](docs/Week2-이동-SpatialHash.md) · [Week3](docs/Week3-전투-양방향브릿지.md)
 
 ![1만 마리 이웃 회피 군집 @ 160fps](docs/images/week2-crowd-separation.png)
 
@@ -125,7 +126,7 @@ flowchart TD
 | **W0** | DOTS 셋업 · asmdef · 첫 컴포넌트 · SubScene 렌더 파이프라인 | 캡슐 엔티티 인스턴싱 렌더 | ✅ 완료 |
 | **W1** | 스폰 시스템 · 카운트 슬라이더 · FPS 오버레이 | 1만 마리 @ ~156 FPS + 슬라이더 | ✅ 완료 |
 | **W2** | 군중 이동 · Spatial Grid (+ `bench/01-naive` 분기) | 1만 군집 @ 160fps + **④단계 벤치 3.13×** | ✅ 완료 |
-| **W3** | GO 플레이어 · 공격↔ECS 브릿지 · 데미지/사망 | 핵심 게임루프 성립 | 🟡 진행 중 |
+| **W3** | GO 플레이어 · 공격↔ECS 브릿지 · 데미지/사망 · 적→플레이어 공격 | 핵심 게임루프 성립 + **전투 A/B 벤치** | ✅ 완료 |
 | **W4** | 경직/넉백 · 광역기 · 미니보스 · 사망 연출 | 광역기 한 방에 화면 정리 | ⬜ |
 | **W5** | 🔬 최적화 스프린트 (①~⑤ 측정·개선) | 벤치마크 데이터셋 | ⬜ |
 | **W6** | 애니메이션 · 폴리시 · 승리조건 | "완성"처럼 보이는 세로 슬라이스 | ⬜ |
@@ -168,6 +169,25 @@ flowchart TD
 - `SpatialHashSystem` — `NativeParallelMultiHashMap` 매 프레임 재구축(ParallelWriter) → `SeparationJob`이 3×3 셀만 조회
 - **④단계 벤치마크 확보**: 1만에서 **19.60ms → 6.26ms (3.13×)**, grid는 적 수와 무관하게 평평 → 상세 [`docs/Week2-이동-SpatialHash.md`](docs/Week2-이동-SpatialHash.md)
 
+### Week 3 — 양방향 전투 · GO↔ECS 브릿지 · 전투 A/B 벤치 ✅
+
+플레이어(GameObject)와 적 1만(ECS)이 **서로 주고받는** 전투를 완성했다. 핵심은 두 세계를 잇는 **브릿지 3종**이고, 각각 **방향과 모양이 다르다**.
+
+![Week 3 — 3천 마리가 플레이어를 포위해 HP를 갈아먹는 중 (124fps)](docs/images/week3-enemy-attack.png)
+
+| 브릿지 | 방향 | 방식 |
+|---|---|---|
+| `PlayerStateBridge` | GO → ECS | 싱글톤 **덮어쓰기** (최신값 1개) |
+| `PlayerAttackBridge` | GO → ECS | **요청 엔티티** 던지기 (사건 1건) |
+| `DeathEventBridge` · `PlayerHealthBridge` | **ECS → GO** | **`NativeQueue` 싱글톤** (사건 N건) |
+
+- `AttackResolveSystem` — **Week2의 Spatial Hash 재사용**해 반경 내 적 조회 → `DamageEvent` 버퍼에 누적
+- `DamageApplySystem` / `DeathSystem` — 버퍼 합산 → HP 차감 → `DeadTag`(**`IEnableableComponent`**, 1만 동시 사망 시 구조 변경 회피) → 사망 이벤트 큐
+- `EnemyAttackSystem` — 1만 마리 병렬 쿨다운·거리 판정 → `AsParallelWriter()`로 플레이어 데미지 큐에 push
+- **🔬 전투 A/B**: 전투 전부 켬 vs 끔을 **같은 세션에서** 측정 → **기울기 +0.84로 여전히 평평** → 상세 [`docs/Week3-전투-양방향브릿지.md`](docs/Week3-전투-양방향브릿지.md)
+
+> 정직한 관찰: 처음엔 "Week3(9.37ms) − Week2 grid(6.26ms) = 전투 비용 3ms"라고 결론 낼 뻔했다. **틀렸다** — 전투를 **전부 끈** 조건도 7.76ms라, 차이의 절반 이상이 코드와 무관한 **세션 간 베이스라인 드리프트**였다. **cross-session 절대값 비교는 무효**이고, 유효한 건 같은 세션 A/B와 기울기뿐이다.
+
 ---
 
 ## 프로젝트 구조
@@ -176,11 +196,16 @@ flowchart TD
 Assets/
   Scripts/
     Simulation/                       # ECS 코어 (ECSWarriors.Simulation asmdef)
-      Components/                     #   Enemy, Velocity, SpawnConfig (IComponentData)
+      Components/                     #   Enemy · Velocity · MoveStats · SpawnConfig · HashedEnemy · SpatialHashMap
+                                      #   PlayerState · AttackRequest · DamageEvent(버퍼) · Health · DeadTag(enableable)
+                                      #   DeathEvent/DeathEventQueue · EnemyAttack · PlayerDamageEvent/PlayerDamageQueue
       SpatialHash.cs                  #   셀 좌표·해시 유틸 (빌드/조회 공유)
       Authoring/                      #   SpawnAuthoring/Baker · MonsterAuthoring/Baker
+      Bridge/                         #   PlayerStateBridge · PlayerAttackBridge (GO→ECS)
+                                      #   DeathEventBridge · PlayerHealthBridge (ECS→GO, NativeQueue 소비)
       Systems/                        #   SpawnSystem · MovementSystem · SpatialHashSystem(+SeparationJob)
-      # Bridge/ (GO↔ECS 브릿지)는 Week 3에 추가
+                                      #   PlayerStateSystem · AttackResolveSystem · DamageApplySystem
+                                      #   DeathSystem · EnemyAttackSystem
     UI/                               # FpsOverlay · SpawnCountSlider (MonoBehaviour)
     Benchmark/                        # BenchmarkHarness (적 수 자동 스윕 → [BENCH-CSV])
   Prefabs/
@@ -193,7 +218,8 @@ docs/
   Week0-DOTS셋업.md        # 주차별 진행 기록
   Week1-스폰.md
   Week2-이동-SpatialHash.md
-  benchmarks/             # 측정 원본 CSV
+  Week3-전투-양방향브릿지.md
+  benchmarks/             # 측정 원본 CSV (week2-separation · week3-combat-ab)
   images/                 # 진행 스크린샷
 ```
 
