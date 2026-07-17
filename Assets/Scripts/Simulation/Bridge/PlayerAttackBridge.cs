@@ -12,10 +12,12 @@ namespace Simulation.Components
         [SerializeField] private float _normalAttackRadius = 5f;
         [SerializeField] private int _normalAttackDamage = 10;
         [SerializeField] private float _normalAttackCoolTime = 1f;
+        [SerializeField] private float _normalAttackKnockbackScale = 2.5f;
         
         [SerializeField] private float _areaAttackRadius = 25f;
         [SerializeField] private int _areaAttackDamage = 100;
         [SerializeField] private float _areaAttackCoolTime = 2f;
+        [SerializeField] private float _areaAttackKnockbackScale = 5f;
         
         private float _normalAttackTimer = 0.0f;
         private float _areaAttackTimer = 0.0f;
@@ -50,6 +52,7 @@ namespace Simulation.Components
                 Center = transform.position,                    // 지금은 플레이어 위치 = 히트박스
                 Radius = _normalAttackRadius,
                 Damage = _normalAttackDamage,
+                KnockbackScale = _normalAttackKnockbackScale,
             });
             _normalAttackTimer = _normalAttackCoolTime;
         }
@@ -69,6 +72,7 @@ namespace Simulation.Components
                 Center = transform.position,                    // 지금은 플레이어 위치 = 히트박스
                 Radius = _areaAttackRadius,
                 Damage = _areaAttackDamage,
+                KnockbackScale = _areaAttackKnockbackScale,
             });
             _areaAttackTimer = _areaAttackCoolTime;
         }

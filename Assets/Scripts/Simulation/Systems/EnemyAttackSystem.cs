@@ -23,6 +23,9 @@ namespace Simulation.Systems
         {
             var player = SystemAPI.GetSingleton<PlayerState>();
             
+            if(player.IsDead)
+                return;
+            
             var handle = new EnemyAttackJob
             {
                 DeltaTime = SystemAPI.Time.DeltaTime,
