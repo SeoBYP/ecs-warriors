@@ -99,6 +99,9 @@ flowchart TD
 | ③ Burst + Job | 병렬 잡 + SIMD | 워커스레드 활용 | 코어별 부하 분산 | 🚧 예정 |
 | ④ Spatial Hashing | 그리드 근접탐색 | 알고리즘 개선 | 근접탐색 잡 시간 | ✅ **1만 @ 19.60ms → 6.26ms (3.13×)** |
 | ⑤ 렌더 최적화 | Entities Graphics 인스턴싱 | 드로우콜↓ | 드로우콜 수, GPU 타임 | 🚧 예정 |
+| ⑥ **API 선택** | Enableable vs AddComponent | **구조 변경 / 동기화** | 동시 사망 프레임 스파이크 | ✅ **1만 동시 사망 42.26 → 31.71ms (+33%, t=5.87)** |
+
+> ⑥은 앞의 단계들과 **결이 다르다.** ①~⑤가 "느린 걸 빠르게"라면, ⑥은 **결과가 똑같은 두 API 중 무엇을 고르나**의 문제다. 코드도 4파일 몇 줄 차이인데 프레임 스파이크가 33% 갈린다.
 
 > 순진한 버전은 별도 브랜치(`bench/01-naive`)로 유지 → 벤치마크의 출발점.
 
@@ -114,6 +117,22 @@ flowchart TD
 **핵심은 기울기다** — grid는 1천이든 1만이든 **~6.2ms로 평평**(이웃 탐색 비용 ≈ 0), naive는 5천을 넘기며 무너진다. 원본: [`docs/benchmarks/week2-separation.csv`](docs/benchmarks/week2-separation.csv) · 분석: [`docs/Week2-이동-SpatialHash.md`](docs/Week2-이동-SpatialHash.md)
 
 > 정직한 관찰: naive도 **51 fps로 돈다**. 양쪽 다 Burst+SIMD+멀티코어를 쓰기 때문 — 즉 이건 "느린 O(n²) vs 빠른 알고리즘"이 아니라 **"Burst로 최적화된 O(n²) vs Burst + 알고리즘"** 의 비교다. 그리고 1,000마리에선 그리드가 **오히려 손해**다(해시맵 재구축 오버헤드). 최적화엔 손익분기점이 있다.
+
+### ⑥ 구조 변경 실측 — Enableable vs AddComponent (각 n=20)
+
+광역기 한 방으로 **9,600마리 동시 사망**을 만들고 그 프레임의 스파이크를 측정. `DeadTag`를 표시하는 방법만 바꿨다.
+
+| | **Enableable** (main) | **AddComponent** (`bench/05-deadtag-structural`) |
+|---|---:|---:|
+| 스파이크 최대 | **31.71 ms** (sd 6.96) | **42.26 ms** (sd 4.03) |
+| 범위 | 24.26 ~ 44.38 | **34.20** ~ 51.63 |
+| | | **+10.55 ms (+33%) · t = 5.87** |
+
+**AddComponent 20라운드 중 최고 성적(34.20ms)이 Enableable의 평균(31.71ms)보다 나쁘다.** 원본: [`docs/benchmarks/week4-deadtag-ab.csv`](docs/benchmarks/week4-deadtag-ab.csv) · 분석: [`docs/Week4-광역기-구조변경벤치.md`](docs/Week4-광역기-구조변경벤치.md)
+
+**왜 갈리나** — "비트라서 싸다"가 절반, **"비트라서 병렬로 할 수 있다"** 가 나머지 절반이고 이쪽이 더 크다. 구조 변경은 [공식 문서](https://docs.unity3d.com/Packages/com.unity.entities@6.5/manual/concepts-structural-changes.html)상 *"only on the main thread; not from jobs"* 라, `AddComponent`는 ECB에 1만 건을 예약한 뒤 **메인 스레드가 혼자 하나씩** 재생해야 한다. **1만 명이 동시에 vs 1명이 순서대로.**
+
+> 방법론 관찰: **같은 40라운드 데이터로 결론이 갈렸다.** 처음 쓴 `초과분 합` 지표는 `t=1.03`(결론 불가)이었고 **음수까지 나왔다**(기준선을 빼는 구조라 노이즈가 2배). `스파이크 최대`로 바꾸니 `t=5.87`. 그리고 n=5에선 `t=1.27`이라 아무 말도 못 했다 — **지표 설계와 표본 수가 결론을 만든다.**
 
 **적 수 목표**: 화면 내 활성 1,500~3,000 + 총 5,000~10,000을 슬라이더로 조절, FPS 오버레이로 노출.
 

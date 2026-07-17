@@ -7,27 +7,70 @@ namespace Simulation.Components
     public class PlayerAttackBridge : MonoBehaviour
     {
         EntityManager _em; 
-        EntityQuery _q;  
         bool _ready;
 
+        [SerializeField] private float _normalAttackRadius = 5f;
+        [SerializeField] private int _normalAttackDamage = 10;
+        [SerializeField] private float _normalAttackCoolTime = 1f;
+        
+        [SerializeField] private float _areaAttackRadius = 25f;
+        [SerializeField] private int _areaAttackDamage = 100;
+        [SerializeField] private float _areaAttackCoolTime = 2f;
+        
+        private float _normalAttackTimer = 0.0f;
+        private float _areaAttackTimer = 0.0f;
+        
         void Start() {
             var world = World.DefaultGameObjectInjectionWorld;   // ✅ Start에 존재 보장 (BeforeSceneLoad)
             if (world == null) return;
             _em = world.EntityManager;
-            _q  = _em.CreateEntityQuery(typeof(PlayerState));    // 쿼리 캐싱
             _ready = true;
         }
         
-        void Update() {
+        void Update()
+        {
             if (!_ready) return;
-            if (!Keyboard.current.spaceKey.wasPressedThisFrame) return;      // 임시 입력 (콤보는 Week 4)
+
+            HandleNormalAttackInput();
+            HandleAreaAttackInput();
+        }
+
+        private void HandleNormalAttackInput()
+        {
+            if (_normalAttackTimer > 0.0f)
+            {
+                _normalAttackTimer -= Time.deltaTime;
+                return;
+            }
+            
+            if (!Mouse.current.leftButton.wasPressedThisFrame) return;
 
             var e = _em.CreateEntity();                         // 요청 엔티티 생성
             _em.AddComponentData(e, new AttackRequest {
                 Center = transform.position,                    // 지금은 플레이어 위치 = 히트박스
-                Radius = 5f,
-                Damage = 10,
+                Radius = _normalAttackRadius,
+                Damage = _normalAttackDamage,
             });
+            _normalAttackTimer = _normalAttackCoolTime;
+        }
+
+        private void HandleAreaAttackInput()
+        {
+            if (_areaAttackTimer > 0.0f)
+            {
+                _areaAttackTimer -= Time.deltaTime;
+                return;
+            }
+            
+            if (!Mouse.current.rightButton.wasPressedThisFrame) return;
+
+            var e = _em.CreateEntity();                         // 요청 엔티티 생성
+            _em.AddComponentData(e, new AttackRequest {
+                Center = transform.position,                    // 지금은 플레이어 위치 = 히트박스
+                Radius = _areaAttackRadius,
+                Damage = _areaAttackDamage,
+            });
+            _areaAttackTimer = _areaAttackCoolTime;
         }
     }
 }
