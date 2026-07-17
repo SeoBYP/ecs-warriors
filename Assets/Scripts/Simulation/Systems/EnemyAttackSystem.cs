@@ -44,7 +44,7 @@ namespace Simulation.Systems
     }
     
     [BurstCompile]
-    [WithDisabled(typeof(DeadTag))]  
+    [WithNone(typeof(DeadTag))]  
     public partial  struct EnemyAttackJob : IJobEntity
     {
         public float DeltaTime;     // 잡에 넘길 데이터는 "필드"로

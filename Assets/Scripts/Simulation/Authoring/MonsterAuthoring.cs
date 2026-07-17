@@ -28,9 +28,7 @@ namespace Simulation.Components
             });
             AddBuffer<DamageEvent>(entity);
             AddComponent(entity, new Health { Value = authoring.Hp });
-            AddComponent<DeadTag>(entity);
-            SetComponentEnabled<DeadTag>(entity, false);   // ★ 붙이되 꺼둔 채 시작
-            
+
             AddComponent(entity, new EnemyAttack
             {
                 Range = authoring.AttackRange,
