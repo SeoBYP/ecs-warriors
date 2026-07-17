@@ -8,5 +8,6 @@ namespace Simulation.Components
         public int Amount;
         public float3 SourcePos;
         public float KnockbackScale;
+        public float StunDuration;
     }
 }

@@ -25,6 +25,7 @@ namespace Simulation.Systems
         void Execute(
             ref LocalTransform localTransform, 
             ref Health health, 
+            ref Stun stun,
             ref DynamicBuffer<DamageEvent> damages, 
             EnabledRefRW<DeadTag> dead)
         {
@@ -32,6 +33,7 @@ namespace Simulation.Systems
             int maxAmount = 0;
             float3 maxSource = float3.zero;
             float maxScale = 0;
+            float maxStun = 0;
             for (int i = 0; i < damages.Length; i++)
             {
                 total += damages[i].Amount;
@@ -40,10 +42,15 @@ namespace Simulation.Systems
                     maxAmount = damages[i].Amount;
                     maxSource = damages[i].SourcePos;
                     maxScale = damages[i].KnockbackScale;
+                    maxStun = damages[i].StunDuration;
                 }
             }
-    
-            if (total > 0) health.Value -= total;
+
+            if (total > 0)
+            {
+                health.Value -= total;
+                stun.Remaining = maxStun;
+            }
             if(health.Value <= 0)
             {
                 dead.ValueRW = true;  

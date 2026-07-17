@@ -49,6 +49,7 @@ namespace Simulation.Systems
                                         Amount = r.Damage,
                                         SourcePos = r.Center,
                                         KnockbackScale = r.KnockbackScale,
+                                        StunDuration = r.StunDuration,
                                     });
                                 }
                             } while (map.TryGetNextValue(out hit, ref it));
