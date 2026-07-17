@@ -24,8 +24,10 @@ namespace Simulation.Components
             if(!_ready) return;
             if(_q.IsEmpty) return;
             
-            _em.SetComponentData(_q.GetSingletonEntity(),
-                new PlayerState { Position = transform.position });
+            var e = _q.GetSingletonEntity();
+            var state = _em.GetComponentData<PlayerState>(e);
+            state.Position = transform.position;
+            _em.SetComponentData(e, state);
         }
     }
 }

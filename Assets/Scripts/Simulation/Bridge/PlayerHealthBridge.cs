@@ -17,6 +17,7 @@ namespace Simulation.Components
         
         EntityManager _em; 
         EntityQuery _q;  
+        EntityQuery _playerStateQuery; 
         bool _ready;
 
         void Start() {
@@ -24,6 +25,7 @@ namespace Simulation.Components
             if (world == null) return;
             _em = world.EntityManager;
             _q  = _em.CreateEntityQuery(typeof(PlayerDamageQueue));    // 쿼리 캐싱
+            _playerStateQuery = _em.CreateEntityQuery(typeof(PlayerState));
             _ready = true;
             
             _hpText.SetText(k_Format, Hp);
@@ -35,7 +37,7 @@ namespace Simulation.Components
         {
             if(!_ready) return;
             if (_q.IsEmpty) return;
-
+            
             var queue = _q.GetSingleton<PlayerDamageQueue>();
             queue.WriteHandle.Complete();          // ★ 잡이 큐에 쓰는 중일 수 있다
 
@@ -48,6 +50,15 @@ namespace Simulation.Components
 
             _hpText.SetText(k_Format, Hp);
             _hpSlider.value = Hp;
+            
+            if (Hp <= 0)
+            {
+                var e = _playerStateQuery.GetSingletonEntity();
+                var state = _em.GetComponentData<PlayerState>(e);
+                
+                state.IsDead = true;
+                _em.SetComponentData(e, state);
+            }
         }
     }
 }
