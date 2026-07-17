@@ -38,6 +38,8 @@ namespace Simulation.Components
                 Timer = authoring.AttackCooldown,
                 Damage = authoring.AttackDamage
             });
+            
+            AddComponent(entity, new Stun { Remaining = 0 });
         }
     }
 }

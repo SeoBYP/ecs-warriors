@@ -9,5 +9,6 @@ namespace Simulation.Components
         public float  Radius;   // 반경
         public int  Damage;
         public float KnockbackScale;
+        public float StunDuration;
     }
 }

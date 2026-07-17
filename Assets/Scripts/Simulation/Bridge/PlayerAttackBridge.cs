@@ -13,11 +13,13 @@ namespace Simulation.Components
         [SerializeField] private int _normalAttackDamage = 10;
         [SerializeField] private float _normalAttackCoolTime = 1f;
         [SerializeField] private float _normalAttackKnockbackScale = 2.5f;
+        [SerializeField] private float _normalAttackStunDuration = 0.5f;
         
         [SerializeField] private float _areaAttackRadius = 25f;
         [SerializeField] private int _areaAttackDamage = 100;
         [SerializeField] private float _areaAttackCoolTime = 2f;
         [SerializeField] private float _areaAttackKnockbackScale = 5f;
+        [SerializeField] private float _areaAttackStunDuration = 0.5f;
         
         private float _normalAttackTimer = 0.0f;
         private float _areaAttackTimer = 0.0f;
@@ -53,6 +55,7 @@ namespace Simulation.Components
                 Radius = _normalAttackRadius,
                 Damage = _normalAttackDamage,
                 KnockbackScale = _normalAttackKnockbackScale,
+                StunDuration = _normalAttackStunDuration,
             });
             _normalAttackTimer = _normalAttackCoolTime;
         }
@@ -73,6 +76,7 @@ namespace Simulation.Components
                 Radius = _areaAttackRadius,
                 Damage = _areaAttackDamage,
                 KnockbackScale = _areaAttackKnockbackScale,
+                StunDuration = _areaAttackStunDuration,
             });
             _areaAttackTimer = _areaAttackCoolTime;
         }
