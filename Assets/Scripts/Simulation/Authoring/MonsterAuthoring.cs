@@ -7,6 +7,12 @@ namespace Simulation.Components
     {
         public float Speed = 3.0f;
         public float StopDistance = 1.5f;
+        public int Hp = 100;
+        
+        public int AttackDamage = 10;
+        public float AttackCooldown = 1.0f;
+        public float AttackRange = 2.0f;
+        
     }
     
     class MonsterBaker : Baker<MonsterAuthoring>
@@ -15,10 +21,22 @@ namespace Simulation.Components
         {
             var entity = GetEntity(TransformUsageFlags.Dynamic);
             AddComponent<Enemy>(entity);
-            AddComponent<MoveStats>(entity, new MoveStats
+            AddComponent(entity, new MoveStats
             {
                 Speed = authoring.Speed,
                 StopDistance = authoring.StopDistance
+            });
+            AddBuffer<DamageEvent>(entity);
+            AddComponent(entity, new Health { Value = authoring.Hp });
+            AddComponent<DeadTag>(entity);
+            SetComponentEnabled<DeadTag>(entity, false);   // ★ 붙이되 꺼둔 채 시작
+            
+            AddComponent(entity, new EnemyAttack
+            {
+                Range = authoring.AttackRange,
+                Cooldown = authoring.AttackCooldown,
+                Timer = authoring.AttackCooldown,
+                Damage = authoring.AttackDamage
             });
         }
     }
