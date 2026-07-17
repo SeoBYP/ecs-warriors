@@ -103,3 +103,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e537d2bd959b4daebcd1fee1dcfe4fdc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Components.MonsterAuthoring
+  Speed: 3
+  StopDistance: 1.5
+  Hp: 100
+  AttackDamage: 10
+  AttackCooldown: 1
+  AttackRange: 2
