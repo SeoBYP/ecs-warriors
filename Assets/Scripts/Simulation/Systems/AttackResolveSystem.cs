@@ -44,7 +44,12 @@ namespace Simulation.Systems
                                 if (math.distance(hit.Position, r.Center) <= r.Radius
                                     && damage.HasBuffer(hit.Entity))
                                 {
-                                    damage[hit.Entity].Add(new DamageEvent { Amount = r.Damage });
+                                    damage[hit.Entity].Add(new DamageEvent
+                                    {
+                                        Amount = r.Damage,
+                                        SourcePos = r.Center,
+                                        KnockbackScale = r.KnockbackScale,
+                                    });
                                 }
                             } while (map.TryGetNextValue(out hit, ref it));
                         }

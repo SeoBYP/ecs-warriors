@@ -2,6 +2,8 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Mathematics;
+using Unity.Transforms;
 
 namespace Simulation.Systems
 {
@@ -20,16 +22,43 @@ namespace Simulation.Systems
     [WithPresent(typeof(DeadTag))]
     partial struct  DamageApplyJob : IJobEntity
     {
-        void Execute(ref Health health, ref DynamicBuffer<DamageEvent> damages, EnabledRefRW<DeadTag> dead)
+        void Execute(
+            ref LocalTransform localTransform, 
+            ref Health health, 
+            ref DynamicBuffer<DamageEvent> damages, 
+            EnabledRefRW<DeadTag> dead)
         {
             int total = 0;
-            for (int i = 0; i < damages.Length; i++) total += damages[i].Amount;
+            int maxAmount = 0;
+            float3 maxSource = float3.zero;
+            float maxScale = 0;
+            for (int i = 0; i < damages.Length; i++)
+            {
+                total += damages[i].Amount;
+                if (damages[i].Amount > maxAmount)
+                {
+                    maxAmount = damages[i].Amount;
+                    maxSource = damages[i].SourcePos;
+                    maxScale = damages[i].KnockbackScale;
+                }
+            }
     
             if (total > 0) health.Value -= total;
             if(health.Value <= 0)
             {
                 dead.ValueRW = true;  
             }
+
+            if (health.Value > 0 && total > 0)
+            {
+                var diff = localTransform.Position - maxSource;
+                if (math.lengthsq(diff) > 0.01f)
+                {
+                    var direction = math.normalize(diff);
+                    localTransform.Position += direction * maxScale;
+                };
+            }
+            
             damages.Clear();                          // ★ 반드시!
         }
     }
