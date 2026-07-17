@@ -4,6 +4,6 @@ namespace Simulation.Components
 {
     public struct DamageEvent : IBufferElementData
     {
-        public float Amount;
+        public int Amount;
     }
 }

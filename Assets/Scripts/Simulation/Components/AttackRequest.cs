@@ -7,6 +7,6 @@ namespace Simulation.Components
     {
         public float3 Center;   // 공격 중심 (히트박스 위치)
         public float  Radius;   // 반경
-        public float  Damage;
+        public int  Damage;
     }
 }

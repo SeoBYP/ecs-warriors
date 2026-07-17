@@ -26,7 +26,7 @@ namespace Simulation.Components
             _em.AddComponentData(e, new AttackRequest {
                 Center = transform.position,                    // 지금은 플레이어 위치 = 히트박스
                 Radius = 5f,
-                Damage = 10f,
+                Damage = 10,
             });
         }
     }
