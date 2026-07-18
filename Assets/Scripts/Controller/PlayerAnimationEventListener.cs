@@ -33,6 +33,7 @@ namespace Controller
         private Animator _animator;
         private EntityManager _em;
         private bool _ecsReady;
+        private Transform _rootMover;   // 루트모션을 옮길 대상 = Player 루트 (ECS·카메라가 붙은 곳)
 
         // 본 이름 → Transform 캐시 (매 스윙마다 계층 탐색하지 않도록)
         private readonly Dictionary<string, Transform> _boneCache = new();
@@ -42,9 +43,22 @@ namespace Controller
         public bool IsSwinging { get; private set; }
         public int SwingId { get; private set; }
 
+        // 현재 콤보 상태(Combo1~4)인가. PlayerController의 이동 잠금 + 루트모션 적용 판정에 쓴다.
+        public bool IsAttacking
+        {
+            get
+            {
+                if (_animator == null) return false;
+                var st = _animator.GetCurrentAnimatorStateInfo(0);
+                return st.IsName("Combo1") || st.IsName("Combo2") || st.IsName("Combo3") || st.IsName("Combo4");
+            }
+        }
+
         private void Awake()
         {
             _animator = GetComponent<Animator>();
+            _animator.applyRootMotion = true;   // 공격 러시용. OnAnimatorMove에서 공격 중에만 루트로 적용.
+            _rootMover = transform.parent != null ? transform.parent : transform;   // Player 루트
         }
 
         private void Start()
@@ -60,6 +74,17 @@ namespace Controller
             {
                 _animator.SetTrigger("Attack");
             }
+        }
+
+        // 루트모션: 공격 클립에 전진(z 0.8~1.4m/s)이 baked돼 있다. applyRootMotion=true라
+        // Animator가 델타를 계산하고, OnAnimatorMove를 정의했으니 적용은 우리가 직접 한다.
+        // 공격 중에만 루트(Player)를 델타만큼 전진 → "휘두르며 앞으로 러시".
+        // 로코모션(in-place 클립)은 델타≈0이고 어차피 PlayerController가 WASD로 이동.
+        private void OnAnimatorMove()
+        {
+            if (_animator == null || _rootMover == null) return;
+            if (IsAttacking)
+                _rootMover.position += _animator.deltaPosition;   // 회전은 마우스가 쥐고 있으므로 위치만
         }
 
         private void LateUpdate()

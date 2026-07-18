@@ -23,6 +23,7 @@ namespace Controller
         [SerializeField] private float _blendDamp = 0.1f;        // 애니 파라미터 보간 시간(부드러운 전환)
         [SerializeField] private Animator _animator;
 
+        private PlayerAnimationEventListener _attackState;   // 공격 중 이동 잠금 판정
         private float _pitch;
 
         private void Start()
@@ -33,6 +34,7 @@ namespace Controller
                 if (t != null) _cameraTarget = t;
             }
             if (_animator == null) _animator = GetComponentInChildren<Animator>();
+            _attackState = GetComponentInChildren<PlayerAnimationEventListener>();
             Cursor.lockState = CursorLockMode.Locked;   // 마우스 캡처 (Esc로 해제됨)
         }
 
@@ -65,8 +67,11 @@ namespace Controller
             bool walking = kb.leftShiftKey.isPressed;
             float speed = walking ? _walkSpeed : _runSpeed;
 
+            // 공격 중에는 WASD 병진 잠금 (전진은 루트모션 러시가 담당). 마우스 시점은 유지.
+            bool attacking = _attackState != null && _attackState.IsAttacking;
             Vector3 moveDir = transform.forward * input.y + transform.right * input.x;
-            transform.position += moveDir * (speed * dt);
+            if (!attacking)
+                transform.position += moveDir * (speed * dt);
 
             // 3) 애니 파라미터 (damping으로 부드럽게)
             if (_animator != null)
