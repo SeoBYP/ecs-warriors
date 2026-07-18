@@ -968,11 +968,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8149b3fc459949d394a5e9af301ee357, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Controller.PlayerController
-  _moveSpeed: 7
+  _runSpeed: 7
+  _walkSpeed: 2.5
   _mouseSensitivity: 0.1
   _cameraTarget: {fileID: 0}
   _minPitch: -35
   _maxPitch: 60
+  _blendDamp: 0.1
   _animator: {fileID: 0}
 --- !u!1 &724095181
 GameObject:
