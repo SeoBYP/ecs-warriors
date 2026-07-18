@@ -172,7 +172,10 @@ namespace Benchmark
                 {
                     var d = ProfilerRecorderHandle.GetDescription(h);
                     if (d.Name == TrackedSystems[i])
-                        list.Add(ProfilerRecorder.StartNew(d.Category, d.Name));   // 이 이름의 모든 카테고리
+                        // ★ SumAllSamplesInFrame — 병렬 잡은 워커별로 마커가 여러 번 발생한다.
+                        //   이 옵션 없이는 그중 하나만 잡혀 엔티티 수와 무관하게 값이 고정된다.
+                        //   합산해야 프레임 내 그 시스템의 실제 CPU 총비용이 나온다.
+                        list.Add(ProfilerRecorder.StartNew(d.Category, d.Name, 1, ProfilerRecorderOptions.SumAllSamplesInFrame));
                 }
                 _sysRecs[i] = list;
                 if (list.Count == 0) all = false;
