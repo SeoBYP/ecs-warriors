@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d4eb1871c09e4774d98670275720349e
+timeCreated: 1530149065
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 121996
+  packageName: Toon Zombies - Extended Pack
+  packageVersion: 1.0
+  assetPath: Assets/Toon_Zombies_extended/prefabs/specials/TZ_Hulk_04_infected.prefab
+  uploadId: 256634

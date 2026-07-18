@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 95a382cc5e0cd934cae544635e155fe5
+timeCreated: 1530151230
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 121996
+  packageName: Toon Zombies - Extended Pack
+  packageVersion: 1.0
+  assetPath: Assets/Toon_Zombies_extended/prefabs/female_civilians/TZ_F_Civ_11.prefab
+  uploadId: 256634

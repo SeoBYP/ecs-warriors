@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f5b8d4dc93192104c8df9f83b0405889
+timeCreated: 1530146991
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 121996
+  packageName: Toon Zombies - Extended Pack
+  packageVersion: 1.0
+  assetPath: Assets/Toon_Zombies_extended/prefabs/specials/TZ_Police_04.prefab
+  uploadId: 256634

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 94891a06c674bec47804984e4cb34974
+timeCreated: 1532015895
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 121996
+  packageName: Toon Zombies - Extended Pack
+  packageVersion: 1.0
+  assetPath: Assets/Toon_Zombies_extended/sample_scene/demo_animators/agg_idle.controller
+  uploadId: 256634

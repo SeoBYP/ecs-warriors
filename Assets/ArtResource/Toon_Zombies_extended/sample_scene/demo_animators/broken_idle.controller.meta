@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 6285fcf848293c14aa80ec684577727b
+timeCreated: 1532015896
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 121996
+  packageName: Toon Zombies - Extended Pack
+  packageVersion: 1.0
+  assetPath: Assets/Toon_Zombies_extended/sample_scene/demo_animators/broken_idle.controller
+  uploadId: 256634

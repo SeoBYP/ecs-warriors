@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 2fe3c6390dd2a4b4880b07d17aef1a0c
+timeCreated: 1530130148
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 121996
+  packageName: Toon Zombies - Extended Pack
+  packageVersion: 1.0
+  assetPath: Assets/Toon_Zombies_extended/sample_scene/sample_ground.mat
+  uploadId: 256634

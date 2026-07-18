@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 4005a9b3f78354343818aafcb1c3a303
+timeCreated: 1530149062
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 121996
+  packageName: Toon Zombies - Extended Pack
+  packageVersion: 1.0
+  assetPath: Assets/Toon_Zombies_extended/prefabs/specials/TZ_Hulk_03.prefab
+  uploadId: 256634

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b551360cf020f7d49bc0e9d3593bb5e2
+timeCreated: 1530149586
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 121996
+  packageName: Toon Zombies - Extended Pack
+  packageVersion: 1.0
+  assetPath: Assets/Toon_Zombies_extended/prefabs/specials/TZ_Tank_04_infected.prefab
+  uploadId: 256634
