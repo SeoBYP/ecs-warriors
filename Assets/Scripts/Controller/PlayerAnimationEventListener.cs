@@ -37,6 +37,7 @@ namespace Controller
         // 본 이름 → Transform 캐시 (매 스윙마다 계층 탐색하지 않도록)
         private readonly Dictionary<string, Transform> _boneCache = new();
         private Transform _activeAnchor;   // 이번 스윙의 기점 (OnAttackStart에서 결정)
+        private float _activePower = 1f;   // 이번 스윙의 위력 배수 (강타). float 파라미터로 클립마다 지정.
 
         public bool IsSwinging { get; private set; }
         public int SwingId { get; private set; }
@@ -71,12 +72,12 @@ namespace Controller
             var e = _em.CreateEntity();
             _em.AddComponentData(e, new AttackRequest
             {
-                Center = new float3(wp.x, 0f, wp.z),   // 바닥 투영 (적이 y=0)
-                Radius = _attackRadius,
-                Damage = _attackDamage,
-                KnockbackScale = _knockbackScale,
-                StunDuration = _stunDuration,
-                SwingId = SwingId,                     // >0 → 스윙당 1히트
+                Center = new float3(wp.x, 0f, wp.z),           // 바닥 투영 (적이 y=0)
+                Radius = _attackRadius,                        // 반경은 기점만큼 고정 (위력 배수는 반경엔 안 곱함)
+                Damage = (int)math.round(_attackDamage * _activePower),
+                KnockbackScale = _knockbackScale * _activePower,
+                StunDuration = _stunDuration * _activePower,
+                SwingId = SwingId,                             // >0 → 스윙당 1히트
             });
         }
 
@@ -87,6 +88,7 @@ namespace Controller
         {
             string boneName = string.IsNullOrEmpty(evt.stringParameter) ? _defaultAnchorBone : evt.stringParameter;
             _activeAnchor = ResolveBone(boneName);
+            _activePower  = evt.floatParameter > 0f ? evt.floatParameter : 1f;   // 강타 배수(비면 1x). Combo4에 2.0 등.
             IsSwinging = true;
             SwingId++;
         }
