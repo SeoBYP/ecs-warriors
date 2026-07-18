@@ -55971,14 +55971,14 @@ AnimationClip:
   m_Events:
   - time: 0.33333334
     functionName: OnAttackStart
-    data: 
+    data: hand_r
     objectReferenceParameter: {fileID: 0}
     floatParameter: 2
     intParameter: 0
     messageOptions: 0
   - time: 0.6666667
     functionName: OnAttackEnd
-    data: 
+    data: hand_r
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
     intParameter: 0
