@@ -35,7 +35,9 @@ namespace Simulation.Components
         {
             if (!_ready) return;
 
-            HandleNormalAttackInput();
+            // 좌클릭 평타는 PlayerAnimationEventListener(애니 히트 프레임)가 담당한다.
+            // 즉시타격 중복을 막기 위해 여기선 비활성. 우클릭 광역기만 유지.
+            // HandleNormalAttackInput();
             HandleAreaAttackInput();
         }
 

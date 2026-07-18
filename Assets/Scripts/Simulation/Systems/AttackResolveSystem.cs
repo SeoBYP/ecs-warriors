@@ -20,6 +20,7 @@ namespace Simulation.Systems
             hash.BuildHandle.Complete();
             var map = hash.Value;
             var damage = SystemAPI.GetBufferLookup<DamageEvent>();   // ★ 엔티티로 버퍼 접근
+            var hitTracker = SystemAPI.GetComponentLookup<HitTracker>();   // 스윙당 1히트 중복제거
             var ecb = new EntityCommandBuffer(Allocator.Temp);
 
             foreach (var (req, reqEntity) in 
@@ -44,6 +45,16 @@ namespace Simulation.Systems
                                 if (math.distance(hit.Position, r.Center) <= r.Radius
                                     && damage.HasBuffer(hit.Entity))
                                 {
+                                    // 스윙 공격(SwingId>0)은 이번 스윙에 이미 맞은 적을 건너뛴다.
+                                    // 단발(SwingId=0, 예: 광역기)은 중복제거 없이 항상 히트.
+                                    if (r.SwingId > 0 && hitTracker.HasComponent(hit.Entity))
+                                    {
+                                        var ht = hitTracker[hit.Entity];
+                                        if (ht.LastSwingId == r.SwingId) continue;   // 이미 맞음 → 스킵
+                                        ht.LastSwingId = r.SwingId;
+                                        hitTracker[hit.Entity] = ht;
+                                    }
+
                                     damage[hit.Entity].Add(new DamageEvent
                                     {
                                         Amount = r.Damage,
