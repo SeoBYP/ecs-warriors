@@ -40,6 +40,7 @@ namespace Simulation.Components
             });
             
             AddComponent(entity, new Stun { Remaining = 0 });
+            AddComponent(entity, new HitTracker { LastSwingId = -1 });   // 아직 어떤 스윙에도 안 맞음
         }
     }
 }
