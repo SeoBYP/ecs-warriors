@@ -4,22 +4,24 @@ using UnityEngine.InputSystem;
 namespace Controller
 {
     /// <summary>
-    /// 3인칭 조준형(스트레이프) 이동.
+    /// 3인칭 조준형(스트레이프) 이동. 평소 달리기 / Shift 유지 시 걷기.
     /// - 마우스 X → 루트(캐릭터) yaw. 몸과 카메라가 같이 좌우로 돈다.
     /// - 마우스 Y → CameraTarget만 pitch(상하). 몸은 안 눕고 카메라만 위아래를 본다.
-    ///   (pitch를 몸에 주면 캐릭터가 고꾸라지므로 카메라 타깃에만 적용한다.)
     /// - WASD는 캐릭터 로컬 기준 이동 → 카메라 기준 스트레이프. 이동 방향으로 돌지 않으므로
     ///   WASD 입력이 그대로 방향별 이동 애니(전/후/좌/우) 블렌드가 된다.
+    /// 애니: Speed(0=Idle, 0.5=Walk, 1=Run) 1D 블렌드 안에 방향별 2D 블렌드(MoveX/MoveY).
     /// 루트가 움직이면 PlayerStateBridge가 위치를 ECS에 전파 → 적 1만이 추적.
     /// </summary>
     public class PlayerController : MonoBehaviour
     {
-        [SerializeField] private float _moveSpeed = 7f;          // 적(3)보다 빨라야 포위를 벗어난다
+        [SerializeField] private float _runSpeed = 7f;           // 기본 (적 3보다 빨라야 포위 탈출)
+        [SerializeField] private float _walkSpeed = 2.5f;        // Shift 유지 시 (걷기 애니 속도에 맞춤 → 발 안 미끄러짐)
         [SerializeField] private float _mouseSensitivity = 0.1f; // 마우스 카운트 → 각도
-        [SerializeField] private Transform _cameraTarget;        // 가슴 높이 자식 (Cinemachine Follow/LookAt)
-        [SerializeField] private float _minPitch = -35f;         // 위로 올려다보는 한계
-        [SerializeField] private float _maxPitch = 60f;          // 아래로 내려다보는 한계
-        [SerializeField] private Animator _animator;             // 자식 캐릭터 (3단계 블렌드 트리가 소비)
+        [SerializeField] private Transform _cameraTarget;        // 카메라 타깃 자식 (Cinemachine Follow/LookAt)
+        [SerializeField] private float _minPitch = -35f;
+        [SerializeField] private float _maxPitch = 60f;
+        [SerializeField] private float _blendDamp = 0.1f;        // 애니 파라미터 보간 시간(부드러운 전환)
+        [SerializeField] private Animator _animator;
 
         private float _pitch;
 
@@ -38,38 +40,41 @@ namespace Controller
         {
             var kb = Keyboard.current;
             if (kb == null) return;
+            float dt = Time.deltaTime;
 
             // 1) 마우스 → 시점
             var mouse = Mouse.current;
             if (mouse != null)
             {
                 Vector2 md = mouse.delta.ReadValue();
-
-                // X → 루트 yaw (몸 + 카메라)
-                transform.Rotate(0f, md.x * _mouseSensitivity, 0f, Space.World);
-
-                // Y → CameraTarget pitch (카메라만). 마우스 위 = 위를 본다.
-                if (_cameraTarget != null)
+                transform.Rotate(0f, md.x * _mouseSensitivity, 0f, Space.World);   // X → yaw
+                if (_cameraTarget != null)                                          // Y → 카메라 pitch만
                 {
                     _pitch = Mathf.Clamp(_pitch - md.y * _mouseSensitivity, _minPitch, _maxPitch);
                     _cameraTarget.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
                 }
             }
 
-            // 2) WASD → 캐릭터 로컬 기준 이동 (= 카메라 기준 스트레이프)
+            // 2) WASD → 캐릭터 로컬 기준 이동
             float x = (kb.dKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed ? 1f : 0f);
             float y = (kb.wKey.isPressed ? 1f : 0f) - (kb.sKey.isPressed ? 1f : 0f);
             Vector2 input = Vector2.ClampMagnitude(new Vector2(x, y), 1f);
+            bool moving = input.sqrMagnitude > 0.0001f;
+
+            // 평소 달리기, Shift 유지 시 걷기
+            bool walking = kb.leftShiftKey.isPressed;
+            float speed = walking ? _walkSpeed : _runSpeed;
 
             Vector3 moveDir = transform.forward * input.y + transform.right * input.x;
-            transform.position += moveDir * (_moveSpeed * Time.deltaTime);
+            transform.position += moveDir * (speed * dt);
 
-            // 3) 방향별 이동 애니 파라미터 (3단계에서 2D 블렌드 트리가 소비)
+            // 3) 애니 파라미터 (damping으로 부드럽게)
             if (_animator != null)
             {
-                _animator.SetFloat("MoveX", input.x);
-                _animator.SetFloat("MoveY", input.y);
-                _animator.SetFloat("Speed", input.magnitude);
+                float speedParam = !moving ? 0f : (walking ? 0.5f : 1f);   // Idle / Walk / Run
+                _animator.SetFloat("Speed", speedParam, _blendDamp, dt);
+                _animator.SetFloat("MoveX", input.x, _blendDamp, dt);
+                _animator.SetFloat("MoveY", input.y, _blendDamp, dt);
             }
         }
     }
