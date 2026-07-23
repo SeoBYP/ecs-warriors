@@ -1,12 +1,13 @@
-// VAT(Vertex Animation Texture) 재생 셰이더 — URP.
+// VAT(Vertex Animation Texture) 재생 셰이더 — URP, 멀티 클립 상태머신.
 //
-// 정점 단계에서 _PositionMap/_NormalMap 텍스처를 읽어 정점을 "그 프레임의 위치"로 옮긴다.
-// 뼈/스키닝 없이 애니메이션이 재생되며, GPU 인스턴싱으로 수만 마리를 1드로우콜에 그릴 수 있다.
+// 여러 애니 클립을 한 텍스처에 세로로 쌓아두고(각 클립 = [startRow, frameCount] 구간),
+// 인스턴스별 _AnimParams/_AnimStart 로 "어느 클립을, 언제부터" 재생할지 결정한다.
+// 뼈/스키닝 없이 GPU 인스턴싱으로 수만 마리가 각자 다른 애니를 재생.
 //
-// 텍스처 규약(VATBaker와 일치): 가로(u)=정점 인덱스, 세로(v)=프레임.
-//   - 정점 인덱스는 메시 UV3.x 에 구워져 있음.
-//   - 프레임 행은 (_Time.y + _AnimOffset) * _Fps 를 _Frames 로 나눈 나머지.
-//   - _AnimOffset 은 인스턴스별로 다르게 줘서(ECS MaterialProperty) 좀비마다 위상을 분산.
+// 텍스처 규약: 가로(u)=정점 인덱스(메시 UV3.x), 세로(v)=프레임(모든 클립을 스택).
+// per-instance (ECS가 [MaterialProperty]로 세팅, VATClipSet.ClipEntry에서 옴):
+//   _AnimParams = (startRow, frameCount, fps, loop)  loop: 1=반복 / 0=원샷(마지막 프레임 정지)
+//   _AnimStart  = 애니가 시작된 절대시각(_Time.y 기준) — 상태 전환 시점. 루프 위상 분산도 겸함.
 Shader "ECSWarriors/VAT_Zombie"
 {
     Properties
@@ -15,9 +16,9 @@ Shader "ECSWarriors/VAT_Zombie"
         _BaseColor    ("Base Color", Color) = (1,1,1,1)
         _PositionMap  ("VAT Position Map", 2D) = "black" {}
         _NormalMapVAT ("VAT Normal Map", 2D) = "white" {}
-        _Frames       ("Frame Count", Float) = 30
-        _Fps          ("Playback FPS", Float) = 30
-        _AnimOffset   ("Anim Time Offset", Float) = 0
+        // (startRow, frameCount, fps, loop). 기본 = 0행부터 30프레임 30fps 루프 (비-ECS 프리뷰용).
+        _AnimParams   ("Anim Params (start,frames,fps,loop)", Vector) = (0, 30, 30, 1)
+        _AnimStart    ("Anim Start Time", Float) = 0
     }
 
     SubShader
@@ -46,19 +47,20 @@ Shader "ECSWarriors/VAT_Zombie"
             CBUFFER_START(UnityPerMaterial)
                 float4 _BaseMap_ST;
                 float4 _BaseColor;
-                float  _Frames;
-                float  _Fps;
-                float  _AnimOffset;
+                float4 _AnimParams;   // (startRow, frameCount, fps, loop)
+                float  _AnimStart;
             CBUFFER_END
 
             // ── Entities Graphics 인스턴스별 오버라이드 ────────────────────────────
-            // ECS에서 [MaterialProperty("_AnimOffset")] 컴포넌트로 좀비마다 값을 다르게 준다.
-            // 주의: 이 #define은 위 CBUFFER 선언보다 "뒤"에 와야 한다(선언은 원래 이름 유지).
+            // ECS에서 [MaterialProperty("_AnimParams")]/[MaterialProperty("_AnimStart")]로 좀비마다 세팅.
+            // 주의: 이 #define들은 위 CBUFFER 선언보다 "뒤"에 와야 한다(선언은 원래 이름 유지).
             #if defined(UNITY_DOTS_INSTANCING_ENABLED)
             UNITY_DOTS_INSTANCING_START(MaterialPropertyMetadata)
-                UNITY_DOTS_INSTANCED_PROP(float, _AnimOffset)
+                UNITY_DOTS_INSTANCED_PROP(float4, _AnimParams)
+                UNITY_DOTS_INSTANCED_PROP(float,  _AnimStart)
             UNITY_DOTS_INSTANCING_END(MaterialPropertyMetadata)
-            #define _AnimOffset UNITY_ACCESS_DOTS_INSTANCED_PROP_WITH_DEFAULT(float, _AnimOffset)
+            #define _AnimParams UNITY_ACCESS_DOTS_INSTANCED_PROP_WITH_DEFAULT(float4, _AnimParams)
+            #define _AnimStart  UNITY_ACCESS_DOTS_INSTANCED_PROP_WITH_DEFAULT(float,  _AnimStart)
             #endif
 
             struct Attributes
@@ -85,14 +87,22 @@ Shader "ECSWarriors/VAT_Zombie"
                 UNITY_SETUP_INSTANCE_ID(IN);
                 UNITY_TRANSFER_INSTANCE_ID(IN, OUT);
 
-                // 1) 시간 → 프레임 행(row). _Time.y = 초. 인스턴스별 오프셋으로 위상 분산.
-                float frame = fmod((_Time.y + _AnimOffset) * _Fps, _Frames);
-                int   fy = (int)floor(frame);
-                int   vx = (int)(IN.uv3.x + 0.5);   // 내 정점 번호(열)
+                float startRow = _AnimParams.x;
+                float frames   = max(_AnimParams.y, 1.0);
+                float fps      = _AnimParams.z;
+                float loop     = _AnimParams.w;
 
-                // 2) VAT에서 이 정점의 위치/노멀을 Load (정수 텍셀좌표, 보간 없음)
-                float3 posOS = LOAD_TEXTURE2D_LOD(_PositionMap,  int2(vx, fy), 0).xyz;
-                float3 nrmOS = LOAD_TEXTURE2D_LOD(_NormalMapVAT, int2(vx, fy), 0).xyz;
+                // 1) 애니 시작 이후 경과 프레임 (_AnimStart = 상태 전환 시각 / 루프 위상)
+                float local = (_Time.y - _AnimStart) * fps;
+                //    루프=wrap, 원샷(death)=마지막 프레임에서 정지(클램프)
+                float frame = (loop > 0.5) ? fmod(local, frames)
+                                           : min(max(local, 0.0), frames - 1.0);
+                int row = (int)(startRow + frame);
+                int vx  = (int)(IN.uv3.x + 0.5);
+
+                // 2) VAT에서 이 정점의 위치/노멀 Load (정수 텍셀좌표, 보간 없음)
+                float3 posOS = LOAD_TEXTURE2D_LOD(_PositionMap,  int2(vx, row), 0).xyz;
+                float3 nrmOS = LOAD_TEXTURE2D_LOD(_NormalMapVAT, int2(vx, row), 0).xyz;
 
                 // 3) 표준 변환 (오브젝트 → 월드 → 클립)
                 VertexPositionInputs pos = GetVertexPositionInputs(posOS);
