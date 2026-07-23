@@ -29,6 +29,12 @@ namespace Simulation.Systems
             var direction = (Target - transform.Position);
             direction = math.normalize(direction);
             transform.Position += direction * stats.Speed * DeltaTime;
+            
+            var flat = new float3(direction.x, 0, direction.z);
+            if (math.lengthsq(flat) > 1e-6f)
+            {
+                transform.Rotation = quaternion.LookRotation(flat, math.up());
+            }
         }
     }
     
