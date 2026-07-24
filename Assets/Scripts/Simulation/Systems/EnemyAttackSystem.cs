@@ -8,6 +8,7 @@ using Unity.Transforms;
 namespace Simulation.Systems
 {
     [BurstCompile]
+    [WithDisabled(typeof(DeadTag))] 
     public partial struct EnemyAttackSystem : ISystem
     {
         private NativeQueue<PlayerDamageEvent> _damageQueue;

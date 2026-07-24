@@ -35,6 +35,8 @@ namespace Simulation.Systems
                     var z = random.NextFloat(-config.Radius, config.Radius);
                     var position = new float3(x, 0 , z);
                     state.EntityManager.SetComponentData(entities[i], LocalTransform.FromPosition(position));
+                    state.EntityManager.SetComponentData(entities[i],
+                        new VATAnimStart { Value = random.NextFloat(0f, 2f) }); 
                 }
             }
             else if (current > target)

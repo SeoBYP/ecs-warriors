@@ -7,14 +7,18 @@ using Unity.Transforms;
 namespace Simulation.Systems
 {
     [BurstCompile]
+    [WithDisabled(typeof(DeadTag))] 
     public partial struct MoveJob : IJobEntity
     {
         public float DeltaTime;     // 잡에 넘길 데이터는 "필드"로
         public float3 Target;
         
-        void Execute(ref LocalTransform transform, ref Stun stun, in MoveStats stats)
+        void Execute(ref LocalTransform transform, ref Stun stun, in MoveStats stats, in Knockback kb)
         {
-            
+            if (kb.Remaining > 0f)
+            {
+                return; 
+            }
             if (stun.Remaining > 0)
             {
                 stun.Remaining -= DeltaTime;

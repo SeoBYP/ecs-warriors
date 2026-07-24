@@ -27,9 +27,12 @@ namespace Simulation.Components
                 StopDistance = authoring.StopDistance
             });
             AddBuffer<DamageEvent>(entity);
+            AddComponent(entity, new Knockback());   // 기본값 0 = 넉백 아님
+            
             AddComponent(entity, new Health { Value = authoring.Hp });
             AddComponent<DeadTag>(entity);
             SetComponentEnabled<DeadTag>(entity, false);   // ★ 붙이되 꺼둔 채 시작
+            AddComponent(entity, new DeathTimer { Remaining = -1f });
             
             AddComponent(entity, new EnemyAttack
             {
@@ -41,6 +44,11 @@ namespace Simulation.Components
             
             AddComponent(entity, new Stun { Remaining = 0 });
             AddComponent(entity, new HitTracker { LastSwingId = -1 });   // 아직 어떤 스윙에도 안 맞음
+            
+            AddComponent(entity, new VATAnimParams());
+            AddComponent(entity, new VATAnimStart());
+            AddComponent(entity, new ZombieAnim { Current = (byte)ZAnim.None });
+            
         }
     }
 }

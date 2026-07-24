@@ -1358,6 +1358,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1364af5103964e4bae03a11f720e54f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Controller.PlayerAnimationEventListener
+  _defaultAnchorBone: hand_r
+  _attackRadius: 2.5
+  _attackDamage: 40
+  _knockbackScale: 3
+  _stunDuration: 0.4
 --- !u!1 &1035654429
 GameObject:
   m_ObjectHideFlags: 0
@@ -1982,6 +1987,9 @@ MonoBehaviour:
   Counts: e8030000c40900008813000010270000
   WarmupFrames: 240
   SampleFrames: 120
+  TrackedSystems:
+  - Default World Simulation.Systems.SpatialHashSystem
+  - Default World Simulation.Systems.MovementSystem
 --- !u!4 &1611971075
 Transform:
   m_ObjectHideFlags: 0

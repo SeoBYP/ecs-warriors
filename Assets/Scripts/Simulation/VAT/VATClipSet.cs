@@ -28,13 +28,13 @@ namespace Simulation.Components
     }
 
     [MaterialProperty("_AnimParams")]
-    struct VATAnimParams : IComponentData
+    public struct VATAnimParams : IComponentData
     {
         public float4 Value;
     }
     
     [MaterialProperty("_AnimStart")]
-    struct VATAnimStart : IComponentData
+    public struct VATAnimStart : IComponentData
     {
         public float Value;
     }
