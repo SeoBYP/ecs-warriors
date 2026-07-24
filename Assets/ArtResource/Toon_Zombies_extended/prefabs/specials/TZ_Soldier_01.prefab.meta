@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 4ed9a80c23ffa7c4aaeac71ac63db2ae
+timeCreated: 1530146952
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 121996
+  packageName: Toon Zombies - Extended Pack
+  packageVersion: 1.0
+  assetPath: Assets/Toon_Zombies_extended/prefabs/specials/TZ_Soldier_01.prefab
+  uploadId: 256634

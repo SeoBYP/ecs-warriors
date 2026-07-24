@@ -22,11 +22,14 @@ namespace Simulation.Systems
     [WithPresent(typeof(DeadTag))]
     partial struct  DamageApplyJob : IJobEntity
     {
+        const float KnockDur = 0.25f; 
+        
         void Execute(
             ref LocalTransform localTransform, 
             ref Health health, 
             ref Stun stun,
             ref DynamicBuffer<DamageEvent> damages, 
+            ref Knockback kb,
             EnabledRefRW<DeadTag> dead)
         {
             int total = 0;
@@ -56,14 +59,15 @@ namespace Simulation.Systems
                 dead.ValueRW = true;  
             }
 
-            if (health.Value > 0 && total > 0)
+            if (total > 0 && maxScale > 0f)                       // ★ 죽어도 넉백
             {
                 var diff = localTransform.Position - maxSource;
                 if (math.lengthsq(diff) > 0.01f)
                 {
-                    var direction = math.normalize(diff);
-                    localTransform.Position += direction * maxScale;
-                };
+                    var dir = math.normalize(diff);
+                    kb.Velocity  = dir * (maxScale / KnockDur);   // KnockDur 동안 maxScale 만큼 이동
+                    kb.Remaining = KnockDur;
+                }
             }
             
             damages.Clear();                          // ★ 반드시!

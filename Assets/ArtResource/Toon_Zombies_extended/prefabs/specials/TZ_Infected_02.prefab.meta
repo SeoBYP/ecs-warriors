@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d8c39f603ec7f2b45af3d0956f936072
+timeCreated: 1530146972
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 121996
+  packageName: Toon Zombies - Extended Pack
+  packageVersion: 1.0
+  assetPath: Assets/Toon_Zombies_extended/prefabs/specials/TZ_Infected_02.prefab
+  uploadId: 256634

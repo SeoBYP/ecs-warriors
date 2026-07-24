@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edcd2e269227baf44b60023011b9bc48, type: 3}
+  m_Name: SpawnTable
+  m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Data.SpawnTable
+  normalPool:
+  - monster: {fileID: 11400000, guid: 3ebf07bacec56b347aa40ed3a02ae1d7, type: 2}
+    weight: 1
+  - monster: {fileID: 11400000, guid: 72423e682ddee5a448573918c420d0e8, type: 2}
+    weight: 1
+  - monster: {fileID: 11400000, guid: 5b587ce0beae1d44e8e2e55098bccad3, type: 2}
+    weight: 1
+  - monster: {fileID: 11400000, guid: 2656907a1e3408241a9c389b5735261e, type: 2}
+    weight: 1
+  elites: []
+  eliteEveryKills: 100
+  boss: {fileID: 0}
+  bossAtKills: 1000

@@ -5,7 +5,7 @@
 ![Unity](https://img.shields.io/badge/Unity-6000.5.4f1-000000?logo=unity)
 ![Entities](https://img.shields.io/badge/Entities-6.5.0-blue)
 ![URP](https://img.shields.io/badge/URP-17.5.0-green)
-![Status](https://img.shields.io/badge/status-WIP%20·%20Week%204-orange)
+![Status](https://img.shields.io/badge/status-WIP%20·%20Week%206-orange)
 
 ## TL;DR
 
@@ -13,7 +13,7 @@
 >
 > 이웃 탐색을 O(n²) 전수 검사에서 **Spatial Hash Grid로 바꿔 1만 마리에서 19.60 ms → 6.26 ms (3.13×)**. 더 중요한 건 **기울기** — 그리드 버전은 적이 1천이든 1만이든 프레임타임이 **평평하다**.
 > 그리고 그 위에 **전투 시스템(1만 마리 거리 판정 + 데미지 적용)을 얹어도 기울기는 여전히 0**이다. 기울기를 가진 건 O(n²) naive뿐(**+13.25**).
-> → 측정 데이터: [Week2](docs/benchmarks/week2-separation.csv) · [Week3 A/B](docs/benchmarks/week3-combat-ab.csv) · 분석: [Week2](docs/Week2-이동-SpatialHash.md) · [Week3](docs/Week3-전투-양방향브릿지.md)
+> → 측정 데이터: [Week2](docs/benchmarks/week2-separation.csv) · [Week3 A/B](docs/benchmarks/week3-combat-ab.csv) · [Week4 A/B](docs/benchmarks/week4-deadtag-ab.csv) · 분석: [Week2](docs/Week2-이동-SpatialHash.md) · [Week3](docs/Week3-전투-양방향브릿지.md) · [Week4](docs/Week4-광역기-구조변경벤치.md)
 
 ![1만 마리 이웃 회피 군집 @ 160fps](docs/images/week2-crowd-separation.png)
 
@@ -146,7 +146,7 @@ flowchart TD
 | **W1** | 스폰 시스템 · 카운트 슬라이더 · FPS 오버레이 | 1만 마리 @ ~156 FPS + 슬라이더 | ✅ 완료 |
 | **W2** | 군중 이동 · Spatial Grid (+ `bench/01-naive` 분기) | 1만 군집 @ 160fps + **④단계 벤치 3.13×** | ✅ 완료 |
 | **W3** | GO 플레이어 · 공격↔ECS 브릿지 · 데미지/사망 · 적→플레이어 공격 | 핵심 게임루프 성립 + **전투 A/B 벤치** | ✅ 완료 |
-| **W4** | 경직/넉백 · 광역기 · 미니보스 · 사망 연출 | 광역기 한 방에 화면 정리 | ⬜ |
+| **W4** | 캐릭터·4타 콤보·무기 영역 판정·루트모션 · 광역기·넉백·경직 · 플레이어 사망 | 무쌍 손맛 + **⑥ 구조 변경 A/B (+33%)** | ✅ 완료 |
 | **W5** | 🔬 최적화 스프린트 (①~⑤ 측정·개선) | 벤치마크 데이터셋 | ⬜ |
 | **W6** | 애니메이션 · 폴리시 · 승리조건 | "완성"처럼 보이는 세로 슬라이스 | ⬜ |
 | **W7~8** | 문서화 · 데모 영상 · 배포 (버퍼) | 제출 가능한 포폴 | ⬜ |
@@ -207,6 +207,44 @@ flowchart TD
 
 > 정직한 관찰: 처음엔 "Week3(9.37ms) − Week2 grid(6.26ms) = 전투 비용 3ms"라고 결론 낼 뻔했다. **틀렸다** — 전투를 **전부 끈** 조건도 7.76ms라, 차이의 절반 이상이 코드와 무관한 **세션 간 베이스라인 드리프트**였다. **cross-session 절대값 비교는 무효**이고, 유효한 건 같은 세션 A/B와 기울기뿐이다.
 
+### Week 4 — 캐릭터·4타 콤보 · 광역기·넉백·경직 · 구조 변경 벤치 ⑥ ✅
+
+캡슐 플레이어를 실제 캐릭터로 바꾸고 **무쌍류 4타 콤보**를 붙였다. 그리고 **광역기 한 방에 화면이 정리되는 손맛**(넉백 + 경직)까지 완성했다. 이번 주의 헤드라인은 **Week 3에서 공격을 "요청 엔티티 + 파라미터"로 설계해둔 복리** — 광역기도 근접 콤보도 **새 ECS 시스템 0개**로 얹혔다.
+
+![Week 4 — HornedKnight가 1만 군중 속에서 콤보를 휘두르는 중 (157fps)](docs/images/week4-character-animation.png)
+
+**액션 · 근접 콤보** — 상세 [`docs/Week4-캐릭터-콤보-루트모션.md`](docs/Week4-캐릭터-콤보-루트모션.md)
+
+- **근접 판정 = 가상 영역 쿼리**: DOTS엔 콜라이더가 없다(적은 인스턴싱 캡슐 수천 개). 무기(손) 위치로 **Week 2의 `SpatialHash` 반경 쿼리를 그대로 재사용** — 회피·광역기가 쓰던 그 쿼리다. `OnAttackStart`~`End` 사이 **매 프레임** 손 위치로 `AttackRequest`를 발사해 손이 아크를 그리며 훑는다.
+- **스윙당 1히트 (`SwingId`)**: 한 적이 여러 프레임 맞지 않게 스윙마다 ID를 증가시켜 중복 제거. `SwingId=0`이면 단발이라 **기존 광역기가 안 깨진다** — 새 시스템 0개, 필드 하나로 끝. 검증: 한 스윙에 1,258마리 **전부 정확히 1히트**, 중복 0.
+- **콤보를 코드가 모른다**: 4타 체이닝은 **순수 Animator 상태 기계**이고 코드 변경 0. "각 콤보 타 = 새 SwingId"만으로 코드는 콤보 인덱스에 무지한 채 정확하다. 판정 기점(왼손/오른손)·강타 배수(Combo4 = 2배)는 **Animation Event 파라미터**로 클립마다 지정.
+- **루트모션**: 콤보 클립에 이미 baked된 전진(0.77~1.42 m/s)이 `applyRootMotion=false`로 버려지고 있었다 — **켜기만 하면 됐다.** `clip.averageSpeed`를 먼저 찍어 "이미 들어있음"을 확인한 덕에 클립 재작업 헛수고를 피했다.
+
+**손맛 · 대량 사망 · 벤치** — 상세 [`docs/Week4-광역기-구조변경벤치.md`](docs/Week4-광역기-구조변경벤치.md)
+
+- **광역기 = 숫자만 바꾸기**: `Radius=25, Damage=100`을 던지면 그게 광역기다. 별도 `AoeRequest` 타입도 시스템 분기도 없다. 검증: 1회에 킬 카운터 **정확히 +10,000**.
+- **넉백**: `DamageEvent` 버퍼 스키마를 처음 확장(`+SourcePos, +KnockbackScale`). `Amount`는 더하면 그만이지만 **방향은 아니다** — 사방에서 맞으면 상쇄되므로 **"최대 데미지 1건" 기준**의 결정론적 넉백. 검증: `MovementSystem` 정지 후 1만 전원 정확히 `+5.00`, `normalize(0)`→NaN 가드 확인.
+- **경직 (`Stun`)**: `DamageApplySystem`(쓰기) ↔ `MovementSystem`(읽기)이 처음으로 **계약**을 맺는다. 계약은 *무엇을 공유하나*뿐 아니라 **"언제 확인하나"**(거리 체크 앞)까지 맞아야 한다.
+- **플레이어 사망**: 브릿지에 `Health`가 아니라 **`bool IsDead` 한 비트**만 — 적은 "몇 HP 남았나"가 아니라 때릴지 말지만 알면 된다. `EnemyAttackSystem`은 시스템에서 조기 반환해 사망 후 **1만 순회 자체를 건너뛴다.**
+- **🔬 ⑥ 구조 변경 A/B**: `DeadTag`를 Enableable vs AddComponent로 측정 → **1만 동시 사망 스파이크 +33% (t=5.87)**. 상세는 위 [최적화 케이스 스터디](#최적화-케이스-스터디-)의 ⑥.
+
+> 정직한 관찰: 경직 가드를 거리 체크 **뒤**에 뒀더니 플레이어에 붙어 있는 적들의 경직 타이머가 얼어붙었다 — 그런데 **넉백이 이 버그를 가려줬다.** 넉백이 적을 사거리 밖으로 밀어내면 다음 프레임엔 정상 동작해서, 광역기 데모는 "밀렸다 → 잠깐 멈췄다 → 온다"로 **정확히 보인다.** 로직은 틀렸는데 화면은 맞다. 넉백을 `0`으로 꺼 격리하고서야 드러났다.
+
+### Week 6 — VAT 군중 애니메이션 (1만 마리 상태머신) ✅
+
+캡슐이던 잡몹을 **실제 좀비 메시**로 바꾸자마자 벽에 부딪혔다 — **전원 T포즈로 누워서** 몰려온 것이다. 버그가 아니라 필연이었다: 리깅된 메시는 정점이 **바인드 포즈(=T포즈)** 로 저장되고, `SkinnedMeshRenderer`가 매 프레임 뼈로 변형(**스키닝**)해야 포즈가 나온다. 그런데 ECS 인스턴싱은 `MeshFilter`로 그리고 **거기엔 스키닝이 없다.** 1만 마리에 `SkinnedMeshRenderer`를 달 수도 없다.
+
+![Week 6 — 1만 좀비가 걷고, 물어뜯고, 넉백에 밀려 쓰러진다](docs/images/week6-vat-state-machine.gif)
+
+**VAT (Vertex Animation Texture)** — 상세 [`docs/Week6-VAT-군중애니메이션.md`](docs/Week6-VAT-군중애니메이션.md)
+
+- **계산에서 재생으로**: 매 프레임 뼈로 정점을 *계산*하는 대신, 정점의 프레임별 위치를 **텍스처에 미리 굽고**(가로=정점, 세로=프레임) 셰이더가 **읽어서 재생**한다. 뼈·Animator 없이 GPU 인스턴싱 1드로우콜. **메모리는 인스턴스 수와 무관** — 1만 마리가 텍스처 1장(클립당 164KB)을 공유한다.
+- **멀티클립 상태머신**: 5클립(idle·walk·attack·damage·death)을 한 텍스처에 **세로로 스택**하고, `{startRow, frameCount, fps, loop}` 표를 **Blob 에셋**으로 구워 전 좀비가 공유(80바이트 1벌 + 핸들 8바이트). `ZombieAnimSystem`이 게임플레이 상태를 읽어 **전환되는 순간에만** 클립 파라미터를 갈아끼운다.
+- **넉백 → 사망 순서 연출**: 넉백을 즉시 텔레포트에서 **0.25초 지속 이동**으로 바꾸고, 애니 우선순위에서 **넉백 > 사망**으로 둬 *"밀려나며 히트 모션 → 멈춘 뒤 쓰러지는 모션"* 을 만들었다. 사망 타이머는 넉백이 끝나야 시작한다(안 그러면 사망 모션이 잘림).
+- **강타 = 넉백**: 1~3타는 제자리 히트, **4타와 우클릭만** 밀어낸다. 판정은 클립에 이미 박혀 있던 **`floatParameter`(강타 배수)** 로 — 코드가 콤보 인덱스를 모르는 Week 4의 설계를 그대로 잇는다.
+
+> 정직한 관찰 셋. **①** `EnabledRefRO<DeadTag>`를 쿼리에 넣으면 상태를 읽을 수는 있지만 **"켜진 것만" 필터가 그대로 살아있어** 매칭 엔티티가 **0개**가 됐다 — 잡은 도는데 1만 마리가 전부 미초기화. `IgnoreComponentEnabledState`가 필요했고, 프로브로 `[기본]=0 vs [Ignore]=10000`을 찍어 확정했다. **②** 초기 상태를 `Idle`로 두면 처음부터 idle인 좀비는 전환이 없어 **영영 초기화가 안 된다** — `None(255)` 센티널로 첫 프레임을 강제했다. **③** "4타만 넉백"을 `IsName("Combo4")`로 판정했더니 항상 false였다. 애니 이벤트는 **전환이 끝나기 전(t=0.33s)에 발사**되어 아직 Combo3으로 보인다. 우클릭은 Animator를 안 거쳐 멀쩡했던 탓에 "4타만 안 되는" 증상으로 나타났다.
+
 ---
 
 ## 프로젝트 구조
@@ -216,17 +254,24 @@ Assets/
   Scripts/
     Simulation/                       # ECS 코어 (ECSWarriors.Simulation asmdef)
       Components/                     #   Enemy · Velocity · MoveStats · SpawnConfig · HashedEnemy · SpatialHashMap
-                                      #   PlayerState · AttackRequest · DamageEvent(버퍼) · Health · DeadTag(enableable)
-                                      #   DeathEvent/DeathEventQueue · EnemyAttack · PlayerDamageEvent/PlayerDamageQueue
+                                      #   PlayerState(+IsDead) · AttackRequest · DamageEvent(버퍼, +넉백/경직) · Health · DeadTag(enableable)
+                                      #   DeathEvent/DeathEventQueue · EnemyAttack · PlayerDamageEvent/PlayerDamageQueue · HitTracker · Stun
       SpatialHash.cs                  #   셀 좌표·해시 유틸 (빌드/조회 공유)
       Authoring/                      #   SpawnAuthoring/Baker · MonsterAuthoring/Baker
       Bridge/                         #   PlayerStateBridge · PlayerAttackBridge (GO→ECS)
                                       #   DeathEventBridge · PlayerHealthBridge (ECS→GO, NativeQueue 소비)
       Systems/                        #   SpawnSystem · MovementSystem · SpatialHashSystem(+SeparationJob)
                                       #   PlayerStateSystem · AttackResolveSystem · DamageApplySystem
-                                      #   DeathSystem · EnemyAttackSystem
+                                      #   DeathSystem(사망 연출 지연) · EnemyAttackSystem
+                                      #   ZombieAnimSystem(VAT 상태머신) · KnockbackSystem
+      VAT/                            #   VATClipSet(클립 메타 SO) · VATClipTable(Blob 싱글톤+authoring)
+                                      #   VATAnimParams/VATAnimStart(MaterialProperty) · ZombieAnim · Knockback · DeathTimer
+    Editor/                           # VATBaker(멀티클립 스택 베이커) · VATBakerWindow
+  Shaders/
+    VAT_Zombie.shader                 # URP. 정점단계 텍스처 lookup으로 애니 재생 + DOTS 인스턴싱
+    Controller/                       # PlayerController · PlayerAnimationEventListener · ResetTriggerOnEnter (GO 플레이어·4타 콤보)
     UI/                               # FpsOverlay · SpawnCountSlider (MonoBehaviour)
-    Benchmark/                        # BenchmarkHarness (적 수 자동 스윕 → [BENCH-CSV])
+    Benchmark/                        # BenchmarkHarness (적 수 자동 스윕) · AoeSpikeHarness (동시 사망 스파이크)
   Prefabs/
     Monster.prefab                    # 스폰 원본(콜라이더 제거)
   Scenes/
@@ -238,7 +283,9 @@ docs/
   Week1-스폰.md
   Week2-이동-SpatialHash.md
   Week3-전투-양방향브릿지.md
-  benchmarks/             # 측정 원본 CSV (week2-separation · week3-combat-ab)
+  Week4-광역기-구조변경벤치.md
+  Week4-캐릭터-콤보-루트모션.md
+  benchmarks/             # 측정 원본 CSV (week2-separation · week3-combat-ab · week4-deadtag-ab)
   images/                 # 진행 스크린샷
 ```
 

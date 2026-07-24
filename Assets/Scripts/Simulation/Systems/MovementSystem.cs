@@ -7,14 +7,18 @@ using Unity.Transforms;
 namespace Simulation.Systems
 {
     [BurstCompile]
+    [WithDisabled(typeof(DeadTag))] 
     public partial struct MoveJob : IJobEntity
     {
         public float DeltaTime;     // 잡에 넘길 데이터는 "필드"로
         public float3 Target;
         
-        void Execute(ref LocalTransform transform, ref Stun stun, in MoveStats stats)
+        void Execute(ref LocalTransform transform, ref Stun stun, in MoveStats stats, in Knockback kb)
         {
-            
+            if (kb.Remaining > 0f)
+            {
+                return; 
+            }
             if (stun.Remaining > 0)
             {
                 stun.Remaining -= DeltaTime;
@@ -29,6 +33,12 @@ namespace Simulation.Systems
             var direction = (Target - transform.Position);
             direction = math.normalize(direction);
             transform.Position += direction * stats.Speed * DeltaTime;
+            
+            var flat = new float3(direction.x, 0, direction.z);
+            if (math.lengthsq(flat) > 1e-6f)
+            {
+                transform.Rotation = quaternion.LookRotation(flat, math.up());
+            }
         }
     }
     

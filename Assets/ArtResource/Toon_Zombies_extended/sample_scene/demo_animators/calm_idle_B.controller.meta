@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a2a269b08d99d6b4cb2320c6e2020cc7
+timeCreated: 1532015822
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 121996
+  packageName: Toon Zombies - Extended Pack
+  packageVersion: 1.0
+  assetPath: Assets/Toon_Zombies_extended/sample_scene/demo_animators/calm_idle_B.controller
+  uploadId: 256634

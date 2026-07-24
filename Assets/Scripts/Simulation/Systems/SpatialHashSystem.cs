@@ -27,10 +27,11 @@ namespace Simulation.Systems
             var query = SystemAPI.QueryBuilder().WithAll<Enemy, LocalTransform>().Build();
             int count = query.CalculateEntityCount();
             
-            _map.Clear();                                // 적이 움직이니 매 프레임 재구축
-            if (_map.Capacity < count)
+            _map.Clear(); // 적이 움직이니 매 프레임 재구축
+            int needed = count + 1024;          // 병렬 writer 여유 + 경계 방지
+            if (_map.Capacity < needed)
             {
-                _map.Capacity = count;
+                _map.Capacity = needed;
                 SystemAPI.SetSingleton(new SpatialHashMap { Value = _map });
             }
             
@@ -57,6 +58,7 @@ namespace Simulation.Systems
     }
     
     [BurstCompile]
+    [WithAll(typeof(Enemy))]                     // ★ Enemy 루트만 해시 (Mesh 자식 제외 → 2배 오버플로 방지)
     partial struct BuildHashJob : IJobEntity
     {
         public NativeParallelMultiHashMap<int, HashedEnemy>.ParallelWriter Writer;
@@ -69,6 +71,7 @@ namespace Simulation.Systems
     }
     
     [BurstCompile]
+    [WithAll(typeof(Enemy))]                     // ★ Enemy 루트만 이동 (Mesh 자식은 부모 따라감)
     partial struct SeparationJob : IJobEntity
     {
         [ReadOnly] public NativeParallelMultiHashMap<int, HashedEnemy> Map;

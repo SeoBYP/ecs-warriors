@@ -39,6 +39,8 @@ namespace Controller
         private readonly Dictionary<string, Transform> _boneCache = new();
         private Transform _activeAnchor;   // 이번 스윙의 기점 (OnAttackStart에서 결정)
         private float _activePower = 1f;   // 이번 스윙의 위력 배수 (강타). float 파라미터로 클립마다 지정.
+        private bool _activeKnockback;     // 이번 스윙이 넉백을 주는가 (마무리 4타 / 우클릭만)
+
 
         public bool IsSwinging { get; private set; }
         public int SwingId { get; private set; }
@@ -100,7 +102,7 @@ namespace Controller
                 Center = new float3(wp.x, 0f, wp.z),           // 바닥 투영 (적이 y=0)
                 Radius = _attackRadius,                        // 반경은 기점만큼 고정 (위력 배수는 반경엔 안 곱함)
                 Damage = (int)math.round(_attackDamage * _activePower),
-                KnockbackScale = _knockbackScale * _activePower,
+                KnockbackScale = _activeKnockback ? _knockbackScale * _activePower : 0f,   // 4타만 넉백
                 StunDuration = _stunDuration * _activePower,
                 SwingId = SwingId,                             // >0 → 스윙당 1히트
             });
@@ -114,6 +116,14 @@ namespace Controller
             string boneName = string.IsNullOrEmpty(evt.stringParameter) ? _defaultAnchorBone : evt.stringParameter;
             _activeAnchor = ResolveBone(boneName);
             _activePower  = evt.floatParameter > 0f ? evt.floatParameter : 1f;   // 강타 배수(비면 1x). Combo4에 2.0 등.
+
+            // 넉백은 "강타"에만 = 이벤트 float 배수가 1보다 큰 클립 (현재 Combo4만 float=2).
+            //  ※ 상태 이름(IsName("Combo4"))으로 판정하면 안 된다 —
+            //    이벤트는 전환(transition)이 끝나기 전에 발사돼 아직 Combo3으로 보이기 때문.
+            //    클립에 박힌 파라미터는 타이밍과 무관하므로 이 방식이 확실하다.
+            //    다른 타에도 넉백을 주려면 그 클립 이벤트의 float을 1보다 크게 설정.
+            _activeKnockback = _activePower > 1f;
+
             IsSwinging = true;
             SwingId++;
         }

@@ -19,7 +19,7 @@ namespace UI
         void Start()
         {
             slider.onValueChanged.AddListener(OnChanged);
-            slider.value = 10000;
+            slider.value = 5000;
             var world = World.DefaultGameObjectInjectionWorld;
             if (world != null) {
                 _em = world.EntityManager;

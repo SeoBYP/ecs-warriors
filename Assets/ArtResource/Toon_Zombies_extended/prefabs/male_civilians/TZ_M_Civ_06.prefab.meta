@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 042d4df5c97678e4da91e413a059d034
+timeCreated: 1530147703
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 121996
+  packageName: Toon Zombies - Extended Pack
+  packageVersion: 1.0
+  assetPath: Assets/Toon_Zombies_extended/prefabs/male_civilians/TZ_M_Civ_06.prefab
+  uploadId: 256634

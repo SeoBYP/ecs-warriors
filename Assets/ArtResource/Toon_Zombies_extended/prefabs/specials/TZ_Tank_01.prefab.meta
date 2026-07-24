@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 11d95eec203bbdb459772eeaaa4199f3
+timeCreated: 1530149576
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 121996
+  packageName: Toon Zombies - Extended Pack
+  packageVersion: 1.0
+  assetPath: Assets/Toon_Zombies_extended/prefabs/specials/TZ_Tank_01.prefab
+  uploadId: 256634
