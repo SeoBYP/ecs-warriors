@@ -116,7 +116,7 @@ namespace Benchmark
         void Update()
         {
             if (_done || !_ready) return;
-            if (!Application.isFocused) return;      // 스로틀 프레임 제외
+            if (!Application.isFocused && !Application.runInBackground) return;      // 스로틀 프레임 제외 (headless 자동측정: runInBackground이면 통과)
 
             TryInitSystemRecorders();
 
