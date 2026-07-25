@@ -13,7 +13,8 @@
 >
 > 이웃 탐색을 O(n²) 전수 검사에서 **Spatial Hash Grid로 바꿔 1만 마리에서 19.60 ms → 6.26 ms (3.13×)**. 더 중요한 건 **기울기** — 그리드 버전은 적이 1천이든 1만이든 프레임타임이 **평평하다**.
 > 그리고 그 위에 **전투 시스템(1만 마리 거리 판정 + 데미지 적용)을 얹어도 기울기는 여전히 0**이다. 기울기를 가진 건 O(n²) naive뿐(**+13.25**).
-> → 측정 데이터: [Week2](docs/benchmarks/week2-separation.csv) · [Week3 A/B](docs/benchmarks/week3-combat-ab.csv) · [Week4 A/B](docs/benchmarks/week4-deadtag-ab.csv) · 분석: [Week2](docs/Week2-이동-SpatialHash.md) · [Week3](docs/Week3-전투-양방향브릿지.md) · [Week4](docs/Week4-광역기-구조변경벤치.md)
+> 그 최적화가 **어디서** 오는지 4단으로 쪼갰다 — 같은 O(n²)에 한 기법씩 얹어 **Burst 49× · 병렬화 3.7× · 알고리즘 1.6×**로 이득을 분리 측정(Week 5).
+> → 측정 데이터: [Week2](docs/benchmarks/week2-separation.csv) · [Week3 A/B](docs/benchmarks/week3-combat-ab.csv) · [Week4 A/B](docs/benchmarks/week4-deadtag-ab.csv) · [Week5 래더](docs/benchmarks/week5-ladder.csv) · 분석: [Week2](docs/Week2-이동-SpatialHash.md) · [Week3](docs/Week3-전투-양방향브릿지.md) · [Week4](docs/Week4-광역기-구조변경벤치.md) · [Week5](docs/Week5-벤치하니스-프로파일러격리.md)
 
 ![1만 마리 이웃 회피 군집 @ 160fps](docs/images/week2-crowd-separation.png)
 
@@ -94,9 +95,9 @@ flowchart TD
 
 | 단계 | 구현 | 기대 병목 | 측정 지표 | 상태 |
 |---|---|---|---|---|
-| ① 순진 | MonoBehaviour + O(n²) 근접탐색 | 메인스레드 CPU 포화 | 적 N마리별 프레임타임(ms) | 🚧 예정 |
-| ② ECS 전환 | Entities, 싱글스레드 | 캐시 미스↓ | 동일 | 🚧 예정 |
-| ③ Burst + Job | 병렬 잡 + SIMD | 워커스레드 활용 | 코어별 부하 분산 | 🚧 예정 |
+| ① 순진 | MonoBehaviour + O(n²) 근접탐색 | 메인스레드 CPU 포화 | 적 N마리별 프레임타임(ms) | 🔬 래더 `cs-naive` 단(비Burst O(n²)) |
+| ② ECS 전환 | Entities, 싱글스레드 | 캐시 미스↓ | 동일 | 🔬 래더 `single` 단(Burst 1스레드) |
+| ③ Burst + Job | 병렬 잡 + SIMD | 워커스레드 활용 | 코어별 부하 분산 | ✅ **래더: Burst 49× · 병렬 3.7×** |
 | ④ Spatial Hashing | 그리드 근접탐색 | 알고리즘 개선 | 근접탐색 잡 시간 | ✅ **1만 @ 19.60ms → 6.26ms (3.13×)** |
 | ⑤ 렌더 최적화 | Entities Graphics 인스턴싱 | 드로우콜↓ | 드로우콜 수, GPU 타임 | 🚧 예정 |
 | ⑥ **API 선택** | Enableable vs AddComponent | **구조 변경 / 동기화** | 동시 사망 프레임 스파이크 | ✅ **1만 동시 사망 42.26 → 31.71ms (+33%, t=5.87)** |
@@ -117,6 +118,26 @@ flowchart TD
 **핵심은 기울기다** — grid는 1천이든 1만이든 **~6.2ms로 평평**(이웃 탐색 비용 ≈ 0), naive는 5천을 넘기며 무너진다. 원본: [`docs/benchmarks/week2-separation.csv`](docs/benchmarks/week2-separation.csv) · 분석: [`docs/Week2-이동-SpatialHash.md`](docs/Week2-이동-SpatialHash.md)
 
 > 정직한 관찰: naive도 **51 fps로 돈다**. 양쪽 다 Burst+SIMD+멀티코어를 쓰기 때문 — 즉 이건 "느린 O(n²) vs 빠른 알고리즘"이 아니라 **"Burst로 최적화된 O(n²) vs Burst + 알고리즘"** 의 비교다. 그리고 1,000마리에선 그리드가 **오히려 손해**다(해시맵 재구축 오버헤드). 최적화엔 손익분기점이 있다.
+
+### 단계별 래더 — 한 기법씩 격리 (cs-naive→single→parallel→grid) ✅
+
+④가 "naive vs grid" 2단 비교라면, Week 5엔 같은 O(n²) 이웃 탐색을 **한 번에 한 기법씩** 올려 4단으로 쪼갰다. 각 단이 정확히 하나만 바꾸므로 그 단의 이득이 격리된다. **에디터 재시작 직후 한 세션에서 4단 연속 측정**(`Counts={1000,2000,3000}`, warmup60/sample60).
+
+| 단 | 알고리즘 | Burst | 스케줄 | `main_ms` @3,000 |
+|---|---|:-:|---|---:|
+| **cs-naive** | O(n²) 전수검사 | ✗ | 1스레드 | **737.1** (1.3 fps) |
+| **single** | O(n²) 전수검사 | ✓ | 1스레드 | 15.05 (62 fps) |
+| **parallel** | O(n²) 전수검사 | ✓ | 병렬 | 4.09 (192 fps) |
+| **grid** | O(n) 공간 해시 | ✓ | 병렬 | **2.49** (281 fps) |
+
+| 전환 | 격리되는 이득 | 배수 |
+|---|---|---:|
+| cs-naive → single | **Burst** (SIMD·인라이닝) | **49×** |
+| single → parallel | **병렬화** (워커 분산) | **3.7×** |
+| parallel → grid | **알고리즘** (O(n²)→O(n)) | **1.6×** |
+| **cs-naive → grid** | 합산 | **296×** |
+
+**Burst 이득이 압도적이고 N에 비례해 커진다**(1천 21× → 3천 49×) — 한 줄 `[BurstCompile]`이 이 래더의 단일 최대 이득. 반면 **병렬화만으론 부족**하다: parallel도 O(n²)라 카운트를 키우면 결국 무너지고(5천 7.34ms), **알고리즘을 바꿔야 기울기가 0**이 된다(grid만 평평). 실비용은 `main_ms`에만 잡힌다 — `SpatialHashSystem_ms`는 4단 모두 **0.001ms**(OnUpdate 스케줄링만 계측), 실연산은 워커에서 돌아 sync point에서 메인을 막는다. 원본: [`docs/benchmarks/week5-ladder.csv`](docs/benchmarks/week5-ladder.csv) · 분석: [`docs/Week5-벤치하니스-프로파일러격리.md`](docs/Week5-벤치하니스-프로파일러격리.md)
 
 ### ⑥ 구조 변경 실측 — Enableable vs AddComponent (각 n=20)
 
@@ -147,7 +168,7 @@ flowchart TD
 | **W2** | 군중 이동 · Spatial Grid (+ `bench/01-naive` 분기) | 1만 군집 @ 160fps + **④단계 벤치 3.13×** | ✅ 완료 |
 | **W3** | GO 플레이어 · 공격↔ECS 브릿지 · 데미지/사망 · 적→플레이어 공격 | 핵심 게임루프 성립 + **전투 A/B 벤치** | ✅ 완료 |
 | **W4** | 캐릭터·4타 콤보·무기 영역 판정·루트모션 · 광역기·넉백·경직 · 플레이어 사망 | 무쌍 손맛 + **⑥ 구조 변경 A/B (+33%)** | ✅ 완료 |
-| **W5** | 🔬 최적화 스프린트 (①~⑤ 측정·개선) | 벤치마크 데이터셋 | ⬜ |
+| **W5** | 🔬 벤치 하니스 확장(시스템 마커 격리) · 단계별 래더 | 프로파일러 격리 + 4단 래더 CSV | ✅ 완료 |
 | **W6** | 애니메이션 · 폴리시 · 승리조건 | "완성"처럼 보이는 세로 슬라이스 | ⬜ |
 | **W7~8** | 문서화 · 데모 영상 · 배포 (버퍼) | 제출 가능한 포폴 | ⬜ |
 
@@ -230,6 +251,17 @@ flowchart TD
 
 > 정직한 관찰: 경직 가드를 거리 체크 **뒤**에 뒀더니 플레이어에 붙어 있는 적들의 경직 타이머가 얼어붙었다 — 그런데 **넉백이 이 버그를 가려줬다.** 넉백이 적을 사거리 밖으로 밀어내면 다음 프레임엔 정상 동작해서, 광역기 데모는 "밀렸다 → 잠깐 멈췄다 → 온다"로 **정확히 보인다.** 로직은 틀렸는데 화면은 맞다. 넉백을 `0`으로 꺼 격리하고서야 드러났다.
 
+### Week 5 — 벤치 하니스 확장 · 단계별 래더 ✅
+
+"총 프레임타임"만 재던 `BenchmarkHarness`를 **어디서 시간이 드는지**(CPU 메인 · GPU · 시스템별 마커 · 드로우콜)까지 `ProfilerRecorder`로 확장하고, 같은 O(n²) 이웃 탐색을 한 기법씩 올려 **cs-naive → single → parallel → grid** 4단으로 격리 측정했다.
+
+- **함정 둘 (실측에서 드러남)**: ① 프로파일러 카운터는 상수명이 아니라 `GetAvailable()`로 **이름을 열거**해 찾아야 하고(8,062개 중), ② 병렬 잡 마커는 `SumAllSamplesInFrame` 없이는 워커 하나치만 잡혀 **N에 안 비례하는 가짜 상수**가 나온다.
+- **🔬 단계별 래더**: 3천 마리 기준 Burst **49×** → 병렬화 **3.7×** → 알고리즘 **1.6×**(합산 296×). 각 단이 기법 하나씩 격리 — 상세는 위 [최적화 케이스 스터디](#최적화-케이스-스터디-)의 **단계별 래더**.
+- **🔬 상태머신 무비용 재확인**: `TrackedSystems`에 `ZombieAnimSystem`을 넣어 재보니 1만 마리에도 **0.001ms** — 전환되는 순간에만 파라미터를 쓰고 나머진 읽기+분기라 grid separation처럼 프로파일에서 사라진다.
+- 상세 [`docs/Week5-벤치하니스-프로파일러격리.md`](docs/Week5-벤치하니스-프로파일러격리.md)
+
+> 정직한 관찰: 같은 grid 코드가 재시작 직후 3.9ms@5000 → 30분+ 플레이 뒤 38ms@5000으로 **10배** 벌어졌다(ECS 마커는 바닥, `main_ms`만 폭발 = **세션 드리프트**). 래더는 **에디터 재시작 직후 4단을 연달아** 재야 유효 — 그래서 cs-naive 단은 새 세션 첫 순서로 측정했다.
+
 ### Week 6 — VAT 군중 애니메이션 (1만 마리 상태머신) ✅
 
 캡슐이던 잡몹을 **실제 좀비 메시**로 바꾸자마자 벽에 부딪혔다 — **전원 T포즈로 누워서** 몰려온 것이다. 버그가 아니라 필연이었다: 리깅된 메시는 정점이 **바인드 포즈(=T포즈)** 로 저장되고, `SkinnedMeshRenderer`가 매 프레임 뼈로 변형(**스키닝**)해야 포즈가 나온다. 그런데 ECS 인스턴싱은 `MeshFilter`로 그리고 **거기엔 스키닝이 없다.** 1만 마리에 `SkinnedMeshRenderer`를 달 수도 없다.
@@ -271,7 +303,7 @@ Assets/
     VAT_Zombie.shader                 # URP. 정점단계 텍스처 lookup으로 애니 재생 + DOTS 인스턴싱
     Controller/                       # PlayerController · PlayerAnimationEventListener · ResetTriggerOnEnter (GO 플레이어·4타 콤보)
     UI/                               # FpsOverlay · SpawnCountSlider (MonoBehaviour)
-    Benchmark/                        # BenchmarkHarness (적 수 자동 스윕) · AoeSpikeHarness (동시 사망 스파이크)
+    Benchmark/                        # BenchmarkHarness (적 수 자동 스윕 + ProfilerRecorder 시스템 마커 격리) · AoeSpikeHarness (동시 사망 스파이크)
   Prefabs/
     Monster.prefab                    # 스폰 원본(콜라이더 제거)
   Scenes/
@@ -285,11 +317,13 @@ docs/
   Week3-전투-양방향브릿지.md
   Week4-광역기-구조변경벤치.md
   Week4-캐릭터-콤보-루트모션.md
-  benchmarks/             # 측정 원본 CSV (week2-separation · week3-combat-ab · week4-deadtag-ab)
+  Week5-벤치하니스-프로파일러격리.md
+  Week6-VAT-군중애니메이션.md
+  benchmarks/             # 측정 원본 CSV (week2-separation · week3-combat-ab · week4-deadtag-ab · week5-ladder)
   images/                 # 진행 스크린샷
 ```
 
-**브랜치**: `main`(최신 통합) · `bench/01-naive`(벤치마크 O(n²) 기준선 — 머지하지 않고 비교용 보존)
+**브랜치**: `main`(최신 통합) · `bench/01-naive`(벤치마크 O(n²) 기준선 — 머지하지 않고 비교용 보존) · `bench/05-deadtag-structural`(⑥ DeadTag Enableable vs AddComponent A/B용) · `bench/week5-naive-grid`(cs-naive/single/parallel 변형 — 단계별 래더 측정용)
 
 ---
 
