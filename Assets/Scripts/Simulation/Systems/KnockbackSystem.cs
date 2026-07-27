@@ -13,20 +13,28 @@ namespace Simulation.Systems
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            new KnockbackJob { Dt = SystemAPI.Time.DeltaTime }.ScheduleParallel();
+            if (SystemAPI.TryGetSingleton<HitStop>(out var hs) && hs.Remaining > 0f) 
+                return;
+            new KnockbackJob { Dt = SystemAPI.Time.DeltaTime }
+                .ScheduleParallel();
         }
     }
-    
+
     [BurstCompile]
     partial struct KnockbackJob : IJobEntity
     {
         public float Dt;
+
         void Execute(ref LocalTransform tf, ref Knockback kb)
         {
             if (kb.Remaining <= 0f) return;
-            tf.Position  += kb.Velocity * Dt;
+            tf.Position += kb.Velocity * Dt;
             kb.Remaining -= Dt;
-            if (kb.Remaining <= 0f) { kb.Remaining = 0f; kb.Velocity = float3.zero; }
+            if (kb.Remaining <= 0f)
+            {
+                kb.Remaining = 0f;
+                kb.Velocity = float3.zero;
+            }
         }
     }
 }

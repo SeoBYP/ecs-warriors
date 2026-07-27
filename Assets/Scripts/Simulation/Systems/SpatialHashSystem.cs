@@ -24,6 +24,8 @@ namespace Simulation.Systems
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
+            if (SystemAPI.TryGetSingleton<HitStop>(out var hs) && hs.Remaining > 0f) return;
+            
             var query = SystemAPI.QueryBuilder().WithAll<Enemy, LocalTransform>().Build();
             int count = query.CalculateEntityCount();
             

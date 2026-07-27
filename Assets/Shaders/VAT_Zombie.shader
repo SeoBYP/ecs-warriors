@@ -7,7 +7,7 @@
 // 텍스처 규약: 가로(u)=정점 인덱스(메시 UV3.x), 세로(v)=프레임(모든 클립을 스택).
 // per-instance (ECS가 [MaterialProperty]로 세팅, VATClipSet.ClipEntry에서 옴):
 //   _AnimParams = (startRow, frameCount, fps, loop)  loop: 1=반복 / 0=원샷(마지막 프레임 정지)
-//   _AnimStart  = 애니가 시작된 절대시각(_Time.y 기준) — 상태 전환 시점. 루프 위상 분산도 겸함.
+//   _AnimStart  = 애니가 시작된 절대시각(_AnimTime 기준 = 게임 통제 시계) — 상태 전환 시점. 루프 위상 분산도 겸함.
 Shader "ECSWarriors/VAT_Zombie"
 {
     Properties
@@ -51,6 +51,11 @@ Shader "ECSWarriors/VAT_Zombie"
                 float  _AnimStart;
             CBUFFER_END
 
+            // ── 게임이 통제하는 전역 애니 시계 (Shader.SetGlobalFloat("_AnimTime")) ──
+            //   VatAnimClockSystem이 매 프레임 세팅하되 히트스톱 중엔 정지 → 전 좀비가 포즈째 얼어붙음.
+            //   ⚠️ per-material CBUFFER "밖"에 둬야 전역이 정상 전달됨(SRP Batcher). DOTS 인스턴싱 프로퍼티와도 별개.
+            float _AnimTime;
+
             // ── Entities Graphics 인스턴스별 오버라이드 ────────────────────────────
             // ECS에서 [MaterialProperty("_AnimParams")]/[MaterialProperty("_AnimStart")]로 좀비마다 세팅.
             // 주의: 이 #define들은 위 CBUFFER 선언보다 "뒤"에 와야 한다(선언은 원래 이름 유지).
@@ -93,7 +98,8 @@ Shader "ECSWarriors/VAT_Zombie"
                 float loop     = _AnimParams.w;
 
                 // 1) 애니 시작 이후 경과 프레임 (_AnimStart = 상태 전환 시각 / 루프 위상)
-                float local = (_Time.y - _AnimStart) * fps;
+                //    _AnimTime = 게임 통제 전역 시계(히트스톱 때 정지). 엔진 _Time.y 대신 사용.
+                float local = (_AnimTime - _AnimStart) * fps;
                 //    루프=wrap, 원샷(death)=마지막 프레임에서 정지(클램프)
                 float frame = (loop > 0.5) ? fmod(local, frames)
                                            : min(max(local, 0.0), frames - 1.0);

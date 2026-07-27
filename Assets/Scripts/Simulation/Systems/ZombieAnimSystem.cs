@@ -22,11 +22,11 @@ namespace Simulation.Systems
         {
             var player = SystemAPI.GetSingleton<PlayerState>();
             var table = SystemAPI.GetSingleton<VATClipTable>();
-            
+            var ast = SystemAPI.GetSingleton<AnimClock>();           
             new ZombieAnimJob
             {
                 PlayerPos = player.Position,
-                Now       = (float)SystemAPI.Time.ElapsedTime,
+                Now       = ast.Time,
                 Table     = table.Blob,
             }.ScheduleParallel();
         }

@@ -54,6 +54,14 @@ namespace Simulation.Systems
         public void OnUpdate(ref SystemState state)
         {
             var player = SystemAPI.GetSingleton<PlayerState>();
+
+            if (SystemAPI.TryGetSingleton<HitStop>(out var hs))
+            {
+                if (hs.Remaining > 0)
+                {
+                    return;
+                }
+            }
             
             new MoveJob
             {
