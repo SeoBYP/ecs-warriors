@@ -30,9 +30,9 @@ namespace Simulation.Systems
             float dt  = SystemAPI.Time.DeltaTime;
             var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-            foreach (var (timer, tr, kb, e) in
-                     SystemAPI.Query<RefRW<DeathTimer>, RefRO<LocalTransform>, RefRO<Knockback>>()
-                         .WithAll<DeadTag>().WithEntityAccess())      // 여기선 "켜진 것만"이 맞음(죽은 좀비)
+            foreach (var (timer, tr, kb, tier, e) in
+                     SystemAPI.Query<RefRW<DeathTimer>, RefRO<LocalTransform>, RefRO<Knockback>, RefRO<TierTag>>()
+                         .WithAll<DeadTag>().WithEntityAccess())    // 여기선 "켜진 것만"이 맞음(죽은 좀비)
             {
                 if (kb.ValueRO.Remaining > 0f) 
                     continue; 
@@ -40,7 +40,11 @@ namespace Simulation.Systems
                 if (timer.ValueRO.Remaining < 0f)
                 {
                     timer.ValueRW.Remaining = deathDur;                                  // 죽은 첫 프레임 → 타이머 시작
-                    _queue.Enqueue(new DeathEvent { Position = tr.ValueRO.Position });   // 점수·VFX는 즉시 피드백
+                    _queue.Enqueue(new DeathEvent
+                    {
+                        Position = tr.ValueRO.Position,
+                        Tier = tier.ValueRO.Value
+                    });   // 점수·VFX는 즉시 피드백
                 }
                 else
                 {
