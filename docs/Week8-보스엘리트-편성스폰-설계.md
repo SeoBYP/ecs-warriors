@@ -98,19 +98,44 @@ flowchart TD
 
 ---
 
-## 6. GO 리더 ↔ ECS 세계 연결 (아키텍처)
+## 6. 리더 아키텍처 — 결정 기록 (ADR)
 
-엘리트/보스 = **GO(플레이어와 같은 월드)**. 필요한 것:
+> **결정(2026-07-27): "ECS 엔티티 + GO 비주얼 팔로워" 하이브리드로 간다.**
+> 리더(엘리트/보스)의 **시뮬레이션(HP·피격·이동·사망)은 ECS 엔티티가 소유**하고, **GameObject(Warrior/Samurai)는 그 엔티티를 매 프레임 따라가는 비주얼(SkinnedMeshRenderer + Animator)** 로만 존재한다. 초안(§6 구버전)의 "HP를 GO가 소유(순수 GO 리더)"를 **폐기**하고 이 방향으로 정정.
+
+### 6.1 후보 두 안
+
+| | **A. ECS 엔티티 + GO 비주얼** (채택) | B. 순수 GO 리더 (초안) |
+|---|---|---|
+| HP·피격·사망 | ECS 엔티티(spatial hash 편입) | GO MonoBehaviour |
+| 비주얼 | GO(팔로워) | GO(네이티브) |
+| 플레이어→리더 피격 | **기존 `AttackResolveSystem`이 자동 처리**(리더도 hash 안에 있으니) | GO 피격판정 **신규**(히트프레임 OverlapSphere + 리더 리스트) |
+| 사망→히트스톱 | `DeathEvent`에 `Tier` 한 필드 추가 → main 트리거가 큐에서 읽음 | GO 사망핸들러→ECS `HitStop` 세팅(GO→ECS 브릿지 신규) |
+| Animator | ECS 상태→Animator 동기 브릿지 1개 필요 | 네이티브(가장 깔끔) |
+
+### 6.2 A를 추천/채택한 이유
+
+1. **기존 전투 파이프라인 100% 재사용 → "리더 사망"까지 최단.** 플레이어 공격은 이미 `AttackRequest → AttackResolveSystem(spatial hash) → DamageApplySystem(HP·DeadTag) → DeathSystem(DeathEvent)` 로 완결돼 있다. 리더를 **고HP·티어태그를 단 Enemy 엔티티**로 hash에 넣기만 하면 피격·데미지·사망이 **새 코드 0줄**로 동작한다. B는 이 파이프라인을 GO 쪽에서 처음부터 다시 만들어야 한다.
+2. **히트스톱 훅이 가장 깔끔.** 목표(P1)는 "리더 사망 → 히트스톱"이다. A에선 `DeathEvent`에 `Tier`만 실으면 main의 트리거가 큐를 읽어 강도를 정한다(엘리트=중, 보스=대). 이벤트 소스가 이미 ECS 큐라 GO→ECS 역방향 브릿지가 불필요.
+3. **시뮬레이션 단일화 = DOTS 포폴 서사에 부합.** "수천 병사도, 소수 리더도 **시뮬은 전부 ECS**, GO는 히어로 비주얼만" — 이게 VAT 군중 + GO 히어로 하이브리드의 더 강한 데모다. 이동도 기존 `MovementSystem`이 리더까지 커버.
+4. **비용 대비 유일한 신규 부담이 작다.** A의 유일한 추가물은 "ECS 상태 → Animator 동기 브릿지"인데, 리더는 소수(11기)라 GO Animator 갱신 비용이 미미. B의 신규 피격판정·역브릿지보다 총량이 적다.
+
+### 6.3 트레이드오프(감수하는 것)
+
+- Animator를 ECS가 간접 구동(엔티티 상태 enum → `LeaderVisualBridge`가 `CrossFade`) → Animator가 상태를 완전히 소유하지 못함. 리더 수가 적어 허용.
+- 리더 엔티티는 **렌더 컴포넌트 없이** 만들어야(GO가 그림) → Monster.prefab 재사용 불가, 별도 리더 아키타입 필요.
+
+### 6.4 축별 방식 (채택안 기준)
 
 | 축 | 방식 | 재사용 |
 |---|---|---|
-| HP | GO 소유(플레이어처럼) | — |
-| 이동 | 플레이어 추적 (GO) | — |
-| **피격**(플레이어→리더) | 리더는 소수 → **GO 콜라이더/리스트로 별도 판정**. 1만은 spatial hash, 리더는 GO 직접 | Week3 "공격=데이터"에 리더 판정 얹기 |
-| 가해(리더→플레이어) | `PlayerDamageQueue` 패턴 or GO 직접 | Week3 브릿지 |
-| **사망 → 히트스톱** | 리더 GO 사망 핸들러가 `HitStop.Remaining` 세팅(GO→ECS) | **P1 히트스톱 STEP 3 = 이 트리거** |
+| HP·피격·사망 | ECS 엔티티(Enemy+Health+TierTag+LeaderTag, spatial hash) | `AttackResolveSystem`·`DamageApplySystem`·`DeathSystem` 그대로 |
+| 이동 | 기존 `MovementSystem`(플레이어 추적) | 그대로 |
+| 가해(리더→플레이어) | 기존 `EnemyAttack`+`PlayerDamageQueue` | 그대로 |
+| 비주얼/애니 | `LeaderVisualBridge`(GO 스폰·추적·Animator 동기) | 신규 1개 |
+| **사망 → 히트스톱** | `DeathEvent.Tier` → main 트리거가 소비 | **P1 히트스톱 STEP 3 = 이 훅** |
 
-> 리더 사망 = 히트스톱 트리거의 정체(앞서 "보스=GO 한 명씩"이라 결론낸 그것). 엘리트=중, 보스=대+슬로모(`_AnimTime` 배속). 병사는 히트스톱 트리거 안 함(영구 프리즈 방지).
+> 리더 사망 = 히트스톱 트리거의 정체. 엘리트=중, 보스=대+슬로모(`_AnimTime` 배속). 병사(Normal)는 트리거 안 함(영구 프리즈 방지).
 
 ---
 
@@ -130,5 +155,6 @@ flowchart TD
 - [x] 엘리트/보스 **스탯·호위 수** — ✅ 초안 ÷2 (엘리트 HP1000/dmg15, 보스 HP4000/dmg30), 호위 100/300
 - [x] 스테이지 **규모** — ✅ 보스 1 + 엘리트 10 = 리더 11기, 병사 1,300
 - [x] 리더 **메시/애니 소스** — ✅ **엘리트 = `ARPGWarrior` · 보스 = `ARPGSamurai`** (ARPGPack, 둘 다 풀 애니 세트). 나머지 후보(Halberd·DualWield)는 추가 티어/변형용 보류.
-- [ ] 리더 **피격 판정** 방식 (GO 콜라이더 vs ECS 편입)
-- [ ] 플레이어 공격이 리더에 닿는 구조 (근접 콤보·광역기 재사용 범위)
+- [x] 리더 **피격 판정** 방식 — ✅ **ECS 편입**(spatial hash). §6 결정: 리더도 Enemy 엔티티라 기존 `AttackResolveSystem`이 자동 판정. GO 콜라이더 별도판정 폐기.
+- [x] 플레이어 공격이 리더에 닿는 구조 — ✅ 기존 근접/광역 `AttackRequest` 그대로. 리더가 hash 안에 있어 반경 판정에 포함 → 재사용 범위 100%.
+- [ ] 리더 **Animator 동기** 방식 (ECS 상태 enum → `LeaderVisualBridge` CrossFade 매핑; STEP D)
