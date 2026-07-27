@@ -236,6 +236,7 @@ MonoBehaviour:
     Weight: 1
   Count: 10000
   Radius: 100
+  InnerRadius: 20
 --- !u!1 &2132814355
 GameObject:
   m_ObjectHideFlags: 0

@@ -28,6 +28,17 @@ namespace Simulation.Systems
             {
                 int toSpawn = target - current;
 
+                // 플레이어 중심 링 [InnerRadius, Radius] — 안쪽은 비워 즉시공격 방지.
+                // ★ 플레이어 위치가 보고될 때까지 스폰 대기 — SubScene 비동기 스트리밍 때문에
+                //   첫 프레임엔 PlayerState.Position이 (0,0,0)이라 원점 링이 되던 문제 방지.
+                //   (플레이어 시작 위치가 원점이 아님을 가정 — 현재 (20,20)에서 시작.)
+                if (!SystemAPI.TryGetSingleton<PlayerState>(out var pstate)) return;
+                float3 center = pstate.Position;
+                center.y = 0f;
+                if (math.lengthsq(center) < 1f) return;   // 아직 (0,0,0) → 대기
+                float rInner = config.InnerRadius;
+                float rOuter = math.max(config.Radius, rInner + 1f);
+
                 // ★ 풀을 로컬로 복사 — Instantiate(구조변경)가 버퍼 참조를 무효화하므로
                 int poolLen = poolBuf.Length;
                 var prefabs = new NativeArray<Entity>(poolLen, Allocator.Temp);
@@ -54,9 +65,10 @@ namespace Simulation.Systems
                     var ents = state.EntityManager.Instantiate(prefabs[i], n, Allocator.Temp);
                     for (int k = 0; k < ents.Length; k++)
                     {
-                        float x = random.NextFloat(-config.Radius, config.Radius);
-                        float z = random.NextFloat(-config.Radius, config.Radius);
-                        state.EntityManager.SetComponentData(ents[k], LocalTransform.FromPosition(new float3(x, 0f, z)));
+                        float ang = random.NextFloat(0f, 2f * math.PI);
+                        float r   = math.sqrt(random.NextFloat(rInner * rInner, rOuter * rOuter)); // 면적 균등
+                        float3 pos = center + new float3(math.cos(ang) * r, 0f, math.sin(ang) * r);
+                        state.EntityManager.SetComponentData(ents[k], LocalTransform.FromPosition(pos));
                         state.EntityManager.SetComponentData(ents[k], new VATAnimStart { Value = random.NextFloat(0f, 2f) });
                     }
                     ents.Dispose();

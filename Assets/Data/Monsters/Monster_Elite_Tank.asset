@@ -23,6 +23,6 @@ MonoBehaviour:
   attackRange: 2.5
   mesh: {fileID: 0}
   material: {fileID: 0}
-  scale: 3
+  scale: 1.2
   prefab: {fileID: 178846, guid: 11d95eec203bbdb459772eeaaa4199f3, type: 3}
   animOverride: {fileID: 0}

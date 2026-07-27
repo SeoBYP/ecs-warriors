@@ -17,6 +17,8 @@ namespace Simulation.Components
         public Variant[] Variants;
         public int Count;
         public float Radius;
+        [Tooltip("플레이어 주변 안전 반경 — 이 안엔 스폰 안 함(시작 즉시공격 방지).")]
+        public float InnerRadius = 15f;
     }
 
     class SpawnBaker : Baker<SpawnAuthoring>
@@ -27,8 +29,9 @@ namespace Simulation.Components
 
             AddComponent(entity, new SpawnConfig
             {
-                Count  = authoring.Count,
-                Radius = authoring.Radius,
+                Count       = authoring.Count,
+                Radius      = authoring.Radius,
+                InnerRadius = authoring.InnerRadius,
             });
 
             var buf = AddBuffer<SpawnPrefab>(entity);
