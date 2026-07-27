@@ -116,7 +116,7 @@ flowchart TD
 
 ## 7. 구현 단계 (설계 확정 후 — 이 문서 다음)
 
-1. **데이터 에셋**: `MonsterDefinition`(Normal/Elite/Boss) + `SquadDefinition` + `StageDefinition` SO 생성·세팅.
+1. ✅ **데이터 에셋**: `MonsterDefinition`(Soldier/Elite/Boss) + `SquadDefinition`(Elite/Boss) + `StageDefinition`(Stage_01) SO 생성·세팅 **완료**. 비주얼 배선 완료 — 병사 mesh/material = `Zombie_M01_Aggro_VATMesh`(VAT), 엘리트 prefab = `ARPG_Warrior`(FBX), 보스 prefab = `ARPG_Samurai_Humanoid`. `animOverride`는 base 컨트롤러 확정 후(현재 null). → `Assets/Data/Monsters/`, 브랜치 `feat/boss-elite-formation`.
 2. **스탯 배선**: `MonsterBaker`가 `MonsterDefinition`에서 스탯 읽도록(현재 하드코딩 중복 제거).
 3. **Spawn 확장**: 편성 기반(리더 GO 배치 + 병사 N ECS 스폰).
 4. **GO 리더**: HP·이동·피격·사망.
