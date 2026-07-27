@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77aced94bcb40e04b96dab3eb8fb97eb, type: 3}
+  m_Name: Squad_Boss
+  m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Data.SquadDefinition
+  leader: {fileID: 11400000, guid: 454742067956a6c41ae515bccf98820e, type: 2}
+  soldier: {fileID: 11400000, guid: 20aff63b3fc1b9b4f96bc2894098102b, type: 2}
+  soldierCount: 300
+  spawnRadius: 14
