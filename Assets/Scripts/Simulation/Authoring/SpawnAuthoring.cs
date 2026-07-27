@@ -1,29 +1,49 @@
-﻿using UnityEngine;
+using UnityEngine;
 using Unity.Entities;
 
 namespace Simulation.Components
 {
     public class SpawnAuthoring : MonoBehaviour
     {
-        public GameObject Prefab;
+        [System.Serializable]
+        public struct Variant
+        {
+            public GameObject Prefab;
+            [Min(0f), Tooltip("가중치. 클수록 자주 뽑힌다.")]
+            public float Weight;
+        }
+
+        [Tooltip("스폰 풀 — 변종 프리팹 + 가중치. 비면 아무것도 안 나옴.")]
+        public Variant[] Variants;
         public int Count;
         public float Radius;
-        
     }
-    
+
     class SpawnBaker : Baker<SpawnAuthoring>
     {
         public override void Bake(SpawnAuthoring authoring)
         {
             var entity = GetEntity(TransformUsageFlags.None);
-            
-            var prefabEntity = GetEntity(authoring.Prefab, TransformUsageFlags.Dynamic);
-            
-            AddComponent(entity, new SpawnConfig {
-                Prefab = prefabEntity,
+
+            AddComponent(entity, new SpawnConfig
+            {
                 Count  = authoring.Count,
                 Radius = authoring.Radius,
             });
+
+            var buf = AddBuffer<SpawnPrefab>(entity);
+            if (authoring.Variants != null)
+            {
+                foreach (var v in authoring.Variants)
+                {
+                    if (v.Prefab == null || v.Weight <= 0f) continue;
+                    buf.Add(new SpawnPrefab
+                    {
+                        Prefab = GetEntity(v.Prefab, TransformUsageFlags.Dynamic),
+                        Weight = v.Weight,
+                    });
+                }
+            }
         }
     }
 }

@@ -223,7 +223,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 75bb3e8f9cbb409bae34b71c46af003a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Components.SpawnAuthoring
-  Prefab: {fileID: 2435691499837815509, guid: 552685c46573e844ba70c27d3cd569c4, type: 3}
+  Variants:
+  - Prefab: {fileID: 2435691499837815509, guid: 552685c46573e844ba70c27d3cd569c4, type: 3}
+    Weight: 1
+  - Prefab: {fileID: 5235082692424184884, guid: b503b236846ad824c9fecd00f669fedb, type: 3}
+    Weight: 1
+  - Prefab: {fileID: 5829004238308895602, guid: 9ed55da280db7204f9ad1e2fadbd6701, type: 3}
+    Weight: 1
+  - Prefab: {fileID: 8620527809057805285, guid: 8d0a34bab15e36449a165fd8d1a74b83, type: 3}
+    Weight: 1
+  - Prefab: {fileID: 7142654700061504302, guid: 8749abe7b271ca0449ebc7864de115d8, type: 3}
+    Weight: 1
   Count: 10000
   Radius: 100
 --- !u!1 &2132814355
