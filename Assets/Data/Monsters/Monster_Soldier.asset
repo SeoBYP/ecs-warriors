@@ -21,8 +21,8 @@ MonoBehaviour:
   attackDamage: 10
   attackCooldown: 1
   attackRange: 2
-  mesh: {fileID: 0}
-  material: {fileID: 0}
+  mesh: {fileID: -7579416073865968368, guid: 9208b6e15aade3a4ab59ba864a5416d3, type: 2}
+  material: {fileID: 2100000, guid: acbfca1b57c5e774dad25284a75c473d, type: 2}
   scale: 1
   prefab: {fileID: 0}
   animOverride: {fileID: 0}
