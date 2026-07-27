@@ -76,7 +76,8 @@ squads : [ { squad: SquadDefinition, center: float3, heading: float } ... ]
 | **Boss(장수)** | **4,000** | **30** | 3.0 | 2.0× | 300 | 대 (0.20s) + 무쌍 연출 |
 
 > **확정(2026-07-27)**: HP·dmg는 초안(엘리트 2000/30, 보스 8000/60)의 **÷2**. speed·scale·호위·히트스톱 유지. 이후 손맛 튜닝 대상.
-> **비주얼 소스 확정**: 엘리트 = `ARPGWarrior`, 보스 = `ARPGSamurai` (`ArtResource/ARPGPack`, 둘 다 풀 애니 세트 — 콤보·공격·사망 클립 보유 → Animator Override로 각 티어 클립 덮음). 플레이어 = IdaFaber HornedKnight, 병사 = Toon Zombie(VAT).
+> **비주얼 소스 확정(2026-07-28 개정)**: **엘리트 = `TZ_Tank_01`(Toon Tank 좀비, scale 3) · 보스 = `TZ_Hulk_01`(Toon Hulk 좀비, scale 4)** (`ArtResource/Toon_Zombies_extended`). 플레이어 = IdaFaber HornedKnight, 병사 = Toon Zombie(VAT).
+> **변경 이유(초안 ARPGWarrior/Samurai 폐기)**: (1) **테마 통일** — 병사가 전부 Toon 좀비인데 리더만 인간 검사(ARPG)라 톤이 어긋났다. Hulk/Tank는 거대 좀비 = 무쌍 보스/부장에 자연스럽다. (2) **렌더 정상화** — ARPG 머티리얼은 URP 미대응이라 리더가 흰색으로 나왔는데(STEP D-1 스크린샷), Toon 좀비는 URP 아틀라스 머티리얼이라 그대로 정상 렌더. (3) 리그·idle 컨트롤러(hulk_idle/tank_idle) 동봉 → 애니 배선도 용이. ARPG는 추후 인간형 티어가 필요하면 보류 후보.
 
 ---
 
@@ -101,7 +102,7 @@ flowchart TD
 ## 6. 리더 아키텍처 — 결정 기록 (ADR)
 
 > **결정(2026-07-27): "ECS 엔티티 + GO 비주얼 팔로워" 하이브리드로 간다.**
-> 리더(엘리트/보스)의 **시뮬레이션(HP·피격·이동·사망)은 ECS 엔티티가 소유**하고, **GameObject(Warrior/Samurai)는 그 엔티티를 매 프레임 따라가는 비주얼(SkinnedMeshRenderer + Animator)** 로만 존재한다. 초안(§6 구버전)의 "HP를 GO가 소유(순수 GO 리더)"를 **폐기**하고 이 방향으로 정정.
+> 리더(엘리트/보스)의 **시뮬레이션(HP·피격·이동·사망)은 ECS 엔티티가 소유**하고, **GameObject(Hulk/Tank 좀비 프리팹)는 그 엔티티를 매 프레임 따라가는 비주얼(SkinnedMeshRenderer + Animator)** 로만 존재한다. 초안(§6 구버전)의 "HP를 GO가 소유(순수 GO 리더)"를 **폐기**하고 이 방향으로 정정.
 
 ### 6.1 후보 두 안
 
@@ -141,7 +142,7 @@ flowchart TD
 
 ## 7. 구현 단계 (설계 확정 후 — 이 문서 다음)
 
-1. ✅ **데이터 에셋**: `MonsterDefinition`(Soldier/Elite/Boss) + `SquadDefinition`(Elite/Boss) + `StageDefinition`(Stage_01) SO 생성·세팅 **완료**. 비주얼 배선 완료 — 병사 mesh/material = `Zombie_M01_Aggro_VATMesh`(VAT), 엘리트 prefab = `ARPG_Warrior`(FBX), 보스 prefab = `ARPG_Samurai_Humanoid`. `animOverride`는 base 컨트롤러 확정 후(현재 null). → `Assets/Data/Monsters/`, 브랜치 `feat/boss-elite-formation`.
+1. ✅ **데이터 에셋**: `MonsterDefinition`(Soldier/Elite/Boss) + `SquadDefinition`(Elite/Boss) + `StageDefinition`(Stage_01) SO 생성·세팅 **완료**. 비주얼 배선 완료 — 병사 mesh/material = `Zombie_M01_Aggro_VATMesh`(VAT), 엘리트 prefab = `TZ_Tank_01`(Toon Tank, scale 3), 보스 prefab = `TZ_Hulk_01`(Toon Hulk, scale 4). `animOverride`는 base 컨트롤러 확정 후(현재 null). → `Assets/Data/Monsters/`, 브랜치 `feat/boss-elite-formation`.
 2. **스탯 배선**: `MonsterBaker`가 `MonsterDefinition`에서 스탯 읽도록(현재 하드코딩 중복 제거).
 3. **Spawn 확장**: 편성 기반(리더 GO 배치 + 병사 N ECS 스폰).
 4. **GO 리더**: HP·이동·피격·사망.
@@ -154,7 +155,7 @@ flowchart TD
 
 - [x] 엘리트/보스 **스탯·호위 수** — ✅ 초안 ÷2 (엘리트 HP1000/dmg15, 보스 HP4000/dmg30), 호위 100/300
 - [x] 스테이지 **규모** — ✅ 보스 1 + 엘리트 10 = 리더 11기, 병사 1,300
-- [x] 리더 **메시/애니 소스** — ✅ **엘리트 = `ARPGWarrior` · 보스 = `ARPGSamurai`** (ARPGPack, 둘 다 풀 애니 세트). 나머지 후보(Halberd·DualWield)는 추가 티어/변형용 보류.
+- [x] 리더 **메시/애니 소스** — ✅ (2026-07-28 개정) **엘리트 = `TZ_Tank_01` · 보스 = `TZ_Hulk_01`** (Toon 좀비, scale 3/4). 초안 ARPGWarrior/Samurai는 테마 불일치+URP 흰색 렌더 문제로 폐기(§4 근거). ARPG는 인간형 티어 필요 시 보류 후보.
 - [x] 리더 **피격 판정** 방식 — ✅ **ECS 편입**(spatial hash). §6 결정: 리더도 Enemy 엔티티라 기존 `AttackResolveSystem`이 자동 판정. GO 콜라이더 별도판정 폐기.
 - [x] 플레이어 공격이 리더에 닿는 구조 — ✅ 기존 근접/광역 `AttackRequest` 그대로. 리더가 hash 안에 있어 반경 판정에 포함 → 재사용 범위 100%.
 - [ ] 리더 **Animator 동기** 방식 (ECS 상태 enum → `LeaderVisualBridge` CrossFade 매핑; STEP D)

@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 71556e6ccd94ae144a3d0cb0c54d1357, type: 3}
-  m_Name: Monster_Boss_Samurai
+  m_Name: Monster_Elite_Tank
   m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Data.MonsterDefinition
-  id: boss_samurai
-  displayName: "\uC7A5\uC218(ARPGSamurai)"
-  tier: 2
-  hp: 4000
-  speed: 3
+  id: elite_tank
+  displayName: "\uBD80\uC7A5(Tank)"
+  tier: 1
+  hp: 1000
+  speed: 3.5
   stopDistance: 1.5
-  attackDamage: 30
-  attackCooldown: 1.2
-  attackRange: 3
+  attackDamage: 15
+  attackCooldown: 1
+  attackRange: 2.5
   mesh: {fileID: 0}
   material: {fileID: 0}
-  scale: 2
-  prefab: {fileID: 6172349342510391726, guid: 0aa0aa59a57daf040891e4696c82eaa0, type: 3}
+  scale: 3
+  prefab: {fileID: 178846, guid: 11d95eec203bbdb459772eeaaa4199f3, type: 3}
   animOverride: {fileID: 0}
