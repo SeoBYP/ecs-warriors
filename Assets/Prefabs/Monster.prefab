@@ -46,6 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e537d2bd959b4daebcd1fee1dcfe4fdc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Components.MonsterAuthoring
+  Definition: {fileID: 11400000, guid: 20aff63b3fc1b9b4f96bc2894098102b, type: 2}
   Speed: 3
   StopDistance: 1.5
   Hp: 100
