@@ -25,4 +25,4 @@ MonoBehaviour:
   material: {fileID: 0}
   scale: 1.5
   prefab: {fileID: 175896, guid: f56ddf80bae5de148b2522128a494d39, type: 3}
-  animOverride: {fileID: 9100000, guid: c471486c1a1baf246bfd8a9bba3d6d84, type: 2}
+  animOverride: {fileID: 9100000, guid: 7f245752b4f86994cbda2e74d3364e11, type: 2}
