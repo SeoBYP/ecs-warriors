@@ -34,7 +34,7 @@ namespace Simulation.Data
         [Header("비주얼 — 엘리트/보스(GameObject)")]
         [Tooltip("Animator 포함 프리팹. 일반 티어는 비워둔다.")]
         public GameObject prefab;
-        [Tooltip("base Animator에 이 몬스터 클립을 덮는 Override Controller.")]
-        public AnimatorOverrideController animOverride;
+        [Tooltip("리더 Animator에 적용할 컨트롤러 — base .controller(예: hulk_idle) 또는 AnimatorOverride 둘 다 가능.")]
+        public RuntimeAnimatorController animOverride;
     }
 }
