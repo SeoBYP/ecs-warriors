@@ -28,6 +28,7 @@ namespace Simulation.Systems
                 PlayerPos = player.Position,
                 Now       = ast.Time,
                 Table     = table.Blob,
+                AggroRange = 40f,   // MovementSystem과 일치 — 범위 밖은 Idle
             }.ScheduleParallel();
         }
     }
@@ -39,6 +40,7 @@ namespace Simulation.Systems
     {
         public float3 PlayerPos;
         public float  Now;
+        public float  AggroRange;
         [ReadOnly] public BlobAssetReference<VATClipBlob> Table;
 
         void Execute(Entity e, in LocalTransform tf, in EnemyAttack atk, in MoveStats mv, in Stun stun,
@@ -56,6 +58,7 @@ namespace Simulation.Systems
             ZAnim want = kb.Remaining > 0f   ? ZAnim.Damage   // ★ 넉백 중엔 죽었어도 히트 모션
                 : dead.ValueRO        ? ZAnim.Death    // 넉백 끝나야 사망 모션
                 : stun.Remaining > 0f ? ZAnim.Damage
+                : d > AggroRange      ? ZAnim.Idle     // ★ 감지범위 밖 → 대기(제자리걷기 방지)
                 : d > mv.StopDistance ? ZAnim.Walk
                 : d < atk.Range       ? ZAnim.Attack
                 :                       ZAnim.Idle;

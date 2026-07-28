@@ -27,15 +27,14 @@ namespace Simulation.Systems
 
         public void OnUpdate(ref SystemState state)
         {
-            // 병사(리더 제외)가 이미 있으면 편성 완료 → 스킵
-            var soldierQuery = SystemAPI.QueryBuilder().WithAll<Enemy>().WithNone<LeaderTag>().Build();
-            if (soldierQuery.CalculateEntityCount() > 0) return;
+            var configEntity = SystemAPI.GetSingletonEntity<SpawnConfig>();
+            // 편성은 1회만 — 이미 스폰했으면 병사가 전멸해도 재스폰 안 함
+            if (SystemAPI.HasComponent<FormationSpawned>(configEntity)) return;
 
             // 리더(스쿼드 중심). 아직 안 구워졌으면 대기.
             var leaderQuery = SystemAPI.QueryBuilder().WithAll<LeaderTag, TierTag, LocalTransform>().Build();
             if (leaderQuery.CalculateEntityCount() == 0) return;
 
-            var configEntity = SystemAPI.GetSingletonEntity<SpawnConfig>();
             var poolBuf = SystemAPI.GetBuffer<SpawnPrefab>(configEntity);
             if (poolBuf.Length == 0) return;
 
@@ -89,6 +88,9 @@ namespace Simulation.Systems
             leaderTier.Dispose();
             prefabs.Dispose();
             weights.Dispose();
+
+            // ★ 편성 스폰 완료 마킹 → 이후 재스폰 안 함
+            state.EntityManager.AddComponent<FormationSpawned>(configEntity);
         }
 
         public void OnDestroy(ref SystemState state)
