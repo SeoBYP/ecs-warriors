@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!28 &-6968708502796610731
+--- !u!28 &-4113079273996870202
 Texture2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -46,7 +46,7 @@ Texture2D:
     offset: 0
     size: 0
     path: 
---- !u!43 &-12289225379510652
+--- !u!43 &-3761276295907374480
 Mesh:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -665,9 +665,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf7f2773e09448f79ff061a9e88a184f, type: 3}
   m_Name: Zombie_F11_ClipSet
   m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Components.VATClipSet
-  positionMap: {fileID: -6968708502796610731}
-  normalMap: {fileID: 3968167260154113129}
-  mesh: {fileID: -12289225379510652}
+  positionMap: {fileID: -4113079273996870202}
+  normalMap: {fileID: 1483290571244845102}
+  mesh: {fileID: -3761276295907374480}
   vertexCount: 767
   totalFrames: 150
   clips:
@@ -696,7 +696,7 @@ MonoBehaviour:
     frameCount: 30
     fps: 18
     loop: 0
---- !u!28 &3968167260154113129
+--- !u!28 &1483290571244845102
 Texture2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

@@ -21,7 +21,7 @@ MonoBehaviour:
   attackDamage: 10
   attackCooldown: 1
   attackRange: 2
-  mesh: {fileID: -12289225379510652, guid: 490692dc61ceae54bb5c2afd6de6052a, type: 2}
+  mesh: {fileID: -3761276295907374480, guid: 490692dc61ceae54bb5c2afd6de6052a, type: 2}
   material: {fileID: 2100000, guid: e5281c4042604414192964597660d819, type: 2}
   scale: 1
   prefab: {fileID: 0}
