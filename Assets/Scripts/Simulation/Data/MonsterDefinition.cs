@@ -18,7 +18,10 @@ namespace Simulation.Data
 
         [Header("스탯")]
         public int hp = 100;
+        [Tooltip("이동 속도(m/s). 몬스터마다 다르게 줘도 발 속도가 자동으로 맞춰진다.")]
         public float speed = 3f;
+        [Tooltip("걷기 클립이 원래 만들어내는 지면 속도(m/s). >0이면 애니 재생 배속 = speed / 이 값 → 발 미끄러짐 제거. 리더(GO Animator)용. 0이면 보정 안 함.")]
+        public float walkClipGroundSpeed = 0f;
         public float stopDistance = 1.5f;
         public int attackDamage = 10;
         public float attackCooldown = 1f;

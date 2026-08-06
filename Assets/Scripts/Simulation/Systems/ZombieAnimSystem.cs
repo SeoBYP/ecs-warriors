@@ -11,6 +11,13 @@ namespace Simulation.Systems
     [UpdateAfter(typeof(MovementSystem))]
     public partial struct ZombieAnimSystem : ISystem
     {
+        /// <summary>
+        /// 걷기 클립(TZ_aggresive_walk)이 원래 만들어내는 지면 이동속도(m/s).
+        /// 루트모션판(_rm)의 averageSpeed 실측값 = 1.154. 이동속도가 이보다 빠르면
+        /// 그만큼 클립 fps를 올려야 발이 미끄러지지 않는다(stride ↔ 실제 이동거리 일치).
+        /// </summary>
+        public const float WalkClipGroundSpeed = 1.154f;
+
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<PlayerState>();
@@ -29,6 +36,7 @@ namespace Simulation.Systems
                 Now       = ast.Time,
                 Table     = table.Blob,
                 AggroRange = 40f,   // MovementSystem과 일치 — 범위 밖은 Idle
+                WalkClipSpeed = WalkClipGroundSpeed,
             }.ScheduleParallel();
         }
     }
@@ -41,6 +49,7 @@ namespace Simulation.Systems
         public float3 PlayerPos;
         public float  Now;
         public float  AggroRange;
+        public float  WalkClipSpeed;   // 걷기 클립의 원래 지면 속도(m/s)
         [ReadOnly] public BlobAssetReference<VATClipBlob> Table;
 
         void Execute(Entity e, in LocalTransform tf, in EnemyAttack atk, in MoveStats mv, in Stun stun,
@@ -66,6 +75,12 @@ namespace Simulation.Systems
             if ((byte)want != za.Current)
             {
                 float4 p = prm[(int)want];
+
+                // ★ 발 속도 = 이동 속도. 걷기만 fps를 이동속도 비례로 스케일 → 풋 슬라이딩 제거.
+                //   (몬스터별 MoveStats.Speed가 다르면 각자 알맞은 보행 템포가 된다)
+                if (want == ZAnim.Walk && WalkClipSpeed > 0.01f)
+                    p.z *= mv.Speed / WalkClipSpeed;
+
                 ap.Value = p;
 
                 // 위상 분산: 루프 클립만, 엔티티별 고정 오프셋만큼 과거에 시작한 것으로

@@ -16,7 +16,8 @@ MonoBehaviour:
   displayName: "\uC7A5\uC218(Hulk)"
   tier: 2
   hp: 4000
-  speed: 3
+  speed: 1.2
+  walkClipGroundSpeed: 0.522
   stopDistance: 1.5
   attackDamage: 30
   attackCooldown: 1.2

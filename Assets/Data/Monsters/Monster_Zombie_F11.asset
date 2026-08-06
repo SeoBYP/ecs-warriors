@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: "\uBCD1\uC0AC(Zombie_F11)"
   tier: 0
   hp: 100
-  speed: 3
+  speed: 2.6
   stopDistance: 1.5
   attackDamage: 10
   attackCooldown: 1

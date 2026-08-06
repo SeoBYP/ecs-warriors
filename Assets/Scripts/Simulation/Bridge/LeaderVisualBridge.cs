@@ -105,7 +105,15 @@ namespace Simulation.Components
                 {
                     // 이동 속도(수평) → Idle/Walk 블렌드
                     Vector3 delta = pos - v.lastPos; delta.y = 0f;
-                    v.anim.SetFloat(P_Speed, delta.magnitude / dt);
+                    float moveSpeed = delta.magnitude / dt;
+                    v.anim.SetFloat(P_Speed, moveSpeed);
+
+                    // ★ 발 속도 = 이동 속도. 걷는 중에만 클립 배속을 이동속도 비례로.
+                    //   (calm_walk는 원래 ~0.5m/s라 그대로 두면 심하게 미끄러진다)
+                    float natural = v.def.walkClipGroundSpeed;
+                    v.anim.speed = (natural > 0.01f && moveSpeed > 0.1f)
+                        ? moveSpeed / natural
+                        : 1f;
 
                     // 사망
                     bool dead = _em.IsComponentEnabled<DeadTag>(e);
