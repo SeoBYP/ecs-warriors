@@ -38,6 +38,10 @@ namespace Simulation.Components
             public bool dead;
             public bool wasStunned;
             public MonsterDefinition def;
+
+            public Transform bar;        // 머리 위 HP 바(월드공간 캔버스, 루트 오브젝트)
+            public Transform barFill;    // 좌측 피벗 — localScale.x = 남은 비율
+            public float barHeight;      // 머리 위 오프셋(모델 높이에서 산출)
         }
 
         static readonly int P_Speed  = Animator.StringToHash("Speed");
@@ -101,10 +105,12 @@ namespace Simulation.Components
                         anim.applyRootMotion = false;   // 위치는 ECS가 소유 — 루트모션 끄기
                     }
                     v = new Vis { go = go, anim = anim, lastPos = pos, def = def, atkTimer = 0f };
+                    BuildHealthBar(v, tier);
                     _visuals[e] = v;
                 }
 
                 v.go.transform.SetPositionAndRotation(pos, lt.Rotation);   // 팔로우
+                UpdateHealthBar(v, e, pos);                                // 머리 위 HP 바
 
                 if (frozen)
                 {
@@ -158,9 +164,77 @@ namespace Simulation.Components
                 if (!_alive.Contains(kv.Key) || !_em.Exists(kv.Key))
                 {
                     if (kv.Value.go != null) Destroy(kv.Value.go);
+                    if (kv.Value.bar != null) Destroy(kv.Value.bar.gameObject);
                     _toRemove.Add(kv.Key);
                 }
             foreach (var e in _toRemove) _visuals.Remove(e);
+        }
+
+        /// <summary>머리 위 월드공간 HP 바 생성. 리더 GO의 스케일을 안 물려받도록 루트로 둔다.</summary>
+        void BuildHealthBar(Vis v, MonsterTier tier)
+        {
+            // 모델 높이에서 바 높이 산출 — 파츠가 여러 개라 전 렌더러를 합친 바운즈를 써야 한다
+            // (첫 렌더러만 보면 머리 같은 작은 조각이 잡혀 바가 가슴에 걸린다)
+            var rends = v.go.GetComponentsInChildren<Renderer>();
+            float top = 0f;
+            if (rends.Length > 0)
+            {
+                var b = rends[0].bounds;
+                for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+                top = b.max.y - v.go.transform.position.y;   // 발밑 기준 모델 높이
+            }
+            v.barHeight = (top > 0.1f ? top : 2f) + 0.4f;
+
+            bool boss = tier == MonsterTier.Boss;
+            float width = boss ? 2.2f : 1.4f;
+            float height = boss ? 0.22f : 0.16f;
+
+            var root = new GameObject("HPBar_" + tier);
+            var canvas = root.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            var rt = (RectTransform)root.transform;
+            rt.sizeDelta = new Vector2(width, height);
+            rt.localScale = Vector3.one;
+
+            // 배경(어두운 판)
+            var bg = new GameObject("BG", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            bg.transform.SetParent(root.transform, false);
+            var bgRt = (RectTransform)bg.transform;
+            bgRt.anchorMin = Vector2.zero; bgRt.anchorMax = Vector2.one;
+            bgRt.offsetMin = Vector2.zero; bgRt.offsetMax = Vector2.zero;
+            bg.GetComponent<UnityEngine.UI.Image>().color = new Color(0f, 0f, 0f, 0.65f);
+
+            // 채움(좌측 피벗 → localScale.x 로 줄인다)
+            var fill = new GameObject("Fill", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            fill.transform.SetParent(root.transform, false);
+            var fRt = (RectTransform)fill.transform;
+            fRt.pivot = new Vector2(0f, 0.5f);
+            fRt.anchorMin = new Vector2(0f, 0f); fRt.anchorMax = new Vector2(0f, 1f);
+            fRt.offsetMin = new Vector2(0f, 0.02f); fRt.offsetMax = new Vector2(0f, -0.02f);
+            fRt.sizeDelta = new Vector2(width - 0.04f, fRt.sizeDelta.y);
+            fRt.anchoredPosition = new Vector2(0.02f, 0f);
+            fill.GetComponent<UnityEngine.UI.Image>().color = boss
+                ? new Color(0.85f, 0.15f, 0.15f)     // 보스 = 붉은색
+                : new Color(0.95f, 0.55f, 0.10f);    // 엘리트 = 주황
+
+            v.bar = root.transform;
+            v.barFill = fill.transform;
+        }
+
+        /// <summary>HP 비율 반영 + 머리 위 배치 + 카메라 빌보드.</summary>
+        void UpdateHealthBar(Vis v, Entity e, Vector3 pos)
+        {
+            if (v.bar == null) return;
+
+            float ratio = 0f;
+            if (_em.HasComponent<Health>(e) && v.def.hp > 0)
+                ratio = Mathf.Clamp01(_em.GetComponentData<Health>(e).Value / (float)v.def.hp);
+
+            var s = v.barFill.localScale; s.x = ratio; v.barFill.localScale = s;
+
+            v.bar.position = pos + Vector3.up * v.barHeight;
+            var cam = Camera.main;
+            if (cam != null) v.bar.rotation = cam.transform.rotation;   // 빌보드
         }
     }
 }
