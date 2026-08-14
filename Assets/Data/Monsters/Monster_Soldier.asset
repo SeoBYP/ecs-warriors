@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71556e6ccd94ae144a3d0cb0c54d1357, type: 3}
+  m_Name: Monster_Soldier
+  m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Data.MonsterDefinition
+  id: soldier
+  displayName: "\uBCD1\uC0AC"
+  tier: 0
+  hp: 100
+  speed: 2
+  stopDistance: 1.5
+  attackDamage: 10
+  attackCooldown: 1
+  attackRange: 2
+  mesh: {fileID: -7579416073865968368, guid: 9208b6e15aade3a4ab59ba864a5416d3, type: 2}
+  material: {fileID: 2100000, guid: acbfca1b57c5e774dad25284a75c473d, type: 2}
+  scale: 1
+  prefab: {fileID: 0}
+  animOverride: {fileID: 0}

@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 665f9d3226b953541abb3779b79ec781, type: 3}
+  m_Name: Stage_01
+  m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Data.StageDefinition
+  squads:
+  - squad: {fileID: 11400000, guid: da67c2ab3d580524f949bebd36ffaaab, type: 2}
+    center: {x: 0, y: 0, z: 80}
+    heading: 180
+  - squad: {fileID: 11400000, guid: 1ef2d48788404344ea090dddc7b909ce, type: 2}
+    center: {x: 50, y: 0, z: 0}
+    heading: 180
+  - squad: {fileID: 11400000, guid: 1ef2d48788404344ea090dddc7b909ce, type: 2}
+    center: {x: 40.45085, y: 0, z: 29.389263}
+    heading: 216
+  - squad: {fileID: 11400000, guid: 1ef2d48788404344ea090dddc7b909ce, type: 2}
+    center: {x: 15.450849, y: 0, z: 47.552826}
+    heading: 252
+  - squad: {fileID: 11400000, guid: 1ef2d48788404344ea090dddc7b909ce, type: 2}
+    center: {x: -15.450848, y: 0, z: 47.552826}
+    heading: 288
+  - squad: {fileID: 11400000, guid: 1ef2d48788404344ea090dddc7b909ce, type: 2}
+    center: {x: -40.45085, y: 0, z: 29.38926}
+    heading: 324
+  - squad: {fileID: 11400000, guid: 1ef2d48788404344ea090dddc7b909ce, type: 2}
+    center: {x: -50, y: 0, z: -0.000004371139}
+    heading: 0
+  - squad: {fileID: 11400000, guid: 1ef2d48788404344ea090dddc7b909ce, type: 2}
+    center: {x: -40.45085, y: 0, z: -29.389256}
+    heading: 36
+  - squad: {fileID: 11400000, guid: 1ef2d48788404344ea090dddc7b909ce, type: 2}
+    center: {x: -15.450854, y: 0, z: -47.552826}
+    heading: 72
+  - squad: {fileID: 11400000, guid: 1ef2d48788404344ea090dddc7b909ce, type: 2}
+    center: {x: 15.450856, y: 0, z: -47.552826}
+    heading: 108
+  - squad: {fileID: 11400000, guid: 1ef2d48788404344ea090dddc7b909ce, type: 2}
+    center: {x: 40.450848, y: 0, z: -29.389265}
+    heading: 144
