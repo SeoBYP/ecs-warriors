@@ -44,6 +44,7 @@ namespace Simulation.Components
             });
             AddBuffer<DamageEvent>(entity);
             AddComponent(entity, new Knockback());   // 기본값 0 = 넉백 아님
+            AddComponent(entity, new KnockbackFactor { Value = def ? def.knockbackFactor : 1f });
 
             AddComponent(entity, new Health { Value = hp });
             AddComponent<DeadTag>(entity);

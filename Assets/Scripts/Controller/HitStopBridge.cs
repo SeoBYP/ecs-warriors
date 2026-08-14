@@ -26,8 +26,8 @@ namespace Controller
         [SerializeField] private CinemachineImpulseSource _impulse;
         [SerializeField] private float _shakeElite = 0.35f;
         [SerializeField] private float _shakeBoss = 0.9f;
-        [Tooltip("이 시간 이상이면 보스 처치로 간주(엘리트 0.10 / 보스 0.20)")]
-        [SerializeField] private float _bossThreshold = 0.15f;
+        [Tooltip("이 시간 이상이면 보스 처치로 간주(엘리트 0.7 / 보스 1.0)")]
+        [SerializeField] private float _bossThreshold = 0.85f;
 
         EntityManager _em;
         EntityQuery _query;

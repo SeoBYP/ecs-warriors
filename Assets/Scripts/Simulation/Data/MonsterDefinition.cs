@@ -22,6 +22,8 @@ namespace Simulation.Data
         public float speed = 3f;
         [Tooltip("걷기 클립이 원래 만들어내는 지면 속도(m/s). >0이면 애니 재생 배속 = speed / 이 값 → 발 미끄러짐 제거. 리더(GO Animator)용. 0이면 보정 안 함.")]
         public float walkClipGroundSpeed = 0f;
+        [Tooltip("넉백 계수. 1=정상, 0=면역(밀려나지 않음). 거대 리더는 0 권장 — 밀리지 않고, 히트스톱도 벤 즉시 걸린다.")]
+        public float knockbackFactor = 1f;
         public float stopDistance = 1.5f;
         public int attackDamage = 10;
         public float attackCooldown = 1f;

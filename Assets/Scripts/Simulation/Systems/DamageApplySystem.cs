@@ -25,11 +25,12 @@ namespace Simulation.Systems
         const float KnockDur = 0.25f; 
         
         void Execute(
-            ref LocalTransform localTransform, 
-            ref Health health, 
+            ref LocalTransform localTransform,
+            ref Health health,
             ref Stun stun,
-            ref DynamicBuffer<DamageEvent> damages, 
+            ref DynamicBuffer<DamageEvent> damages,
             ref Knockback kb,
+            in KnockbackFactor kbFactor,
             EnabledRefRW<DeadTag> dead)
         {
             int total = 0;
@@ -58,6 +59,8 @@ namespace Simulation.Systems
             {
                 dead.ValueRW = true;  
             }
+
+            maxScale *= kbFactor.Value;                          // ★ 넉백 계수(리더=0 → 면역)
 
             if (total > 0 && maxScale > 0f)                       // ★ 죽어도 넉백
             {

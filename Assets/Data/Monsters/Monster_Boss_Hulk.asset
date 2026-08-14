@@ -18,6 +18,7 @@ MonoBehaviour:
   hp: 900
   speed: 1.2
   walkClipGroundSpeed: 0.522
+  knockbackFactor: 0
   stopDistance: 1.5
   attackDamage: 30
   attackCooldown: 1.2

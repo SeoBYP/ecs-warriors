@@ -47,7 +47,8 @@ namespace Simulation.Systems
                     // 죽은 첫 프레임 → 타이머 시작
                     if (tier.ValueRO.Value != MonsterTier.Normal && SystemAPI.TryGetSingletonRW<HitStop>(out var hitStop))
                     {
-                        float value = tier.ValueRO.Value == MonsterTier.Boss ? 0.20f : 0.10f;
+                        // 프리즈 길이(초). 리더는 넉백 면역이라 벤 즉시 걸린다.
+                        float value = tier.ValueRO.Value == MonsterTier.Boss ? 1.0f : 0.7f;
                         hitStop.ValueRW.Remaining = math.max(hitStop.ValueRO.Remaining, value);
                     }
                     _queue.Enqueue(new DeathEvent

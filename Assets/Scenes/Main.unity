@@ -958,7 +958,7 @@ MonoBehaviour:
   _impulse: {fileID: 645119406}
   _shakeElite: 0.35
   _shakeBoss: 0.9
-  _bossThreshold: 0.15
+  _bossThreshold: 0.85
 --- !u!114 &645119406
 MonoBehaviour:
   m_ObjectHideFlags: 0
