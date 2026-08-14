@@ -24,6 +24,7 @@ namespace Simulation.Components
             AddComponent(entity, new MoveStats { Speed = def.speed, StopDistance = def.stopDistance });
             AddBuffer<DamageEvent>(entity);
             AddComponent(entity, new Knockback());
+            AddComponent(entity, new KnockbackFactor { Value = def.knockbackFactor });
 
             AddComponent(entity, new Health { Value = def.hp });
             AddComponent<DeadTag>(entity);

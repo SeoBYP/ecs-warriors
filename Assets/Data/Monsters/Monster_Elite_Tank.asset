@@ -15,9 +15,10 @@ MonoBehaviour:
   id: elite_tank
   displayName: "\uBD80\uC7A5(Tank)"
   tier: 1
-  hp: 1000
+  hp: 300
   speed: 1.4
   walkClipGroundSpeed: 0.49
+  knockbackFactor: 0
   stopDistance: 1.5
   attackDamage: 15
   attackCooldown: 1

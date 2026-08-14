@@ -15,9 +15,10 @@ MonoBehaviour:
   id: boss_hulk
   displayName: "\uC7A5\uC218(Hulk)"
   tier: 2
-  hp: 4000
+  hp: 900
   speed: 1.2
   walkClipGroundSpeed: 0.522
+  knockbackFactor: 0
   stopDistance: 1.5
   attackDamage: 30
   attackCooldown: 1.2

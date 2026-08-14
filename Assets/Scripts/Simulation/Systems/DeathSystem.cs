@@ -4,6 +4,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using Simulation.Data;
 
 namespace Simulation.Systems
 {
@@ -17,6 +18,7 @@ namespace Simulation.Systems
         {
             state.RequireForUpdate<DeadTag>();
             state.RequireForUpdate<VATClipTable>();          // 사망 클립 길이를 얻으려고
+            state.RequireForUpdate<HitStop>();
             _queue = new NativeQueue<DeathEvent>(Allocator.Persistent);
             state.EntityManager.CreateSingleton(new DeathEventQueue { Value = _queue });
         }
@@ -30,6 +32,8 @@ namespace Simulation.Systems
             float dt  = SystemAPI.Time.DeltaTime;
             var ecb = new EntityCommandBuffer(Allocator.Temp);
 
+ 
+            
             foreach (var (timer, tr, kb, tier, e) in
                      SystemAPI.Query<RefRW<DeathTimer>, RefRO<LocalTransform>, RefRO<Knockback>, RefRO<TierTag>>()
                          .WithAll<DeadTag>().WithEntityAccess())    // 여기선 "켜진 것만"이 맞음(죽은 좀비)
@@ -39,7 +43,14 @@ namespace Simulation.Systems
                 
                 if (timer.ValueRO.Remaining < 0f)
                 {
-                    timer.ValueRW.Remaining = deathDur;                                  // 죽은 첫 프레임 → 타이머 시작
+                    timer.ValueRW.Remaining = deathDur;   
+                    // 죽은 첫 프레임 → 타이머 시작
+                    if (tier.ValueRO.Value != MonsterTier.Normal && SystemAPI.TryGetSingletonRW<HitStop>(out var hitStop))
+                    {
+                        // 프리즈 길이(초). 리더는 넉백 면역이라 벤 즉시 걸린다.
+                        float value = tier.ValueRO.Value == MonsterTier.Boss ? 1.0f : 0.7f;
+                        hitStop.ValueRW.Remaining = math.max(hitStop.ValueRO.Remaining, value);
+                    }
                     _queue.Enqueue(new DeathEvent
                     {
                         Position = tr.ValueRO.Position,
