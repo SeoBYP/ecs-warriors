@@ -142,12 +142,21 @@ flowchart TD
 
 ## 7. 구현 단계 (설계 확정 후 — 이 문서 다음)
 
-1. ✅ **데이터 에셋**: `MonsterDefinition`(Soldier/Elite/Boss) + `SquadDefinition`(Elite/Boss) + `StageDefinition`(Stage_01) SO 생성·세팅 **완료**. 비주얼 배선 완료 — 병사 mesh/material = `Zombie_M01_Aggro_VATMesh`(VAT), 엘리트 prefab = `TZ_Tank_01`(Toon Tank, scale 3), 보스 prefab = `TZ_Hulk_01`(Toon Hulk, scale 4). `animOverride`는 base 컨트롤러 확정 후(현재 null). → `Assets/Data/Monsters/`, 브랜치 `feat/boss-elite-formation`.
-2. **스탯 배선**: `MonsterBaker`가 `MonsterDefinition`에서 스탯 읽도록(현재 하드코딩 중복 제거).
-3. **Spawn 확장**: 편성 기반(리더 GO 배치 + 병사 N ECS 스폰).
-4. **GO 리더**: HP·이동·피격·사망.
-5. **히트스톱 트리거 연결**(Week 8).
+1. ✅ **데이터 에셋**: `MonsterDefinition`(Soldier/Elite/Boss) + `SquadDefinition`(Elite/Boss) + `StageDefinition`(Stage_01) SO 생성·세팅. 비주얼 배선 — 병사 mesh/material = VAT, 엘리트 prefab = `TZ_Tank_01`(scale 1.2), 보스 prefab = `TZ_Hulk_01`(scale 1.5). → `Assets/Data/Monsters/`
+2. ✅ **스탯 배선**: `MonsterAuthoring.Definition`(SO) + `MonsterBaker`가 거기서 스탯·티어를 굽고 `TierTag` 부착(하드코딩은 폴백으로만 유지). 몬스터별 `speed`도 여기서 조절(데이터 주도).
+3. ✅ **Spawn 확장**: 편성(스쿼드) 기반 — 리더 주위에 병사 스폰(보스 300 / 엘리트 100), `FormationSpawned` 마커로 **1회성**(전멸해도 재스폰 없음). 병사 풀은 `SpawnPrefab` 버퍼(가중 랜덤 5종).
+4. ✅ **GO 리더**: 시뮬은 ECS 엔티티(§6 결정) — HP·피격·사망은 기존 파이프라인 그대로, `LeaderVisualBridge`가 GO 비주얼 스폰·추적·**Animator 구동**(Idle/Walk/Attack/Hit/Death).
+5. **히트스톱 트리거 연결** → **Week 8**(다음 주차). 훅은 이미 준비됨: `DeathEvent.Tier`.
 6. **리더 고유 무브셋/패턴**(심화 — 광역·처형 등).
+
+### 7.1 Week 7에서 추가로 처리한 것 (설계 문서 범위 밖·완성도)
+
+- **병사 다양화**: 시민 좀비 4종(M09·M18·F05·F11) VAT 베이크 + 기존 M01 = **5종 가중 랜덤 스폰**. 몬스터별 이동속도 분리(1.7~2.6).
+- **감지범위(AggroRange 40)**: 범위 밖 병사는 추적하지 않고 Idle — 편성이 유지된다(예전엔 전원이 시작부터 플레이어로 직진).
+- **링 스폰**: 플레이어 중심 도넛(안쪽 안전반경) — 시작 즉시 포위·피격 방지.
+- **발 속도 동기화**: 걷기 클립 실측 지면속도(1.154 m/s) 기준으로 `_AnimParams.z`(fps)를 이동속도 비례 스케일 → 풋 슬라이딩 제거. 리더는 `walkClipGroundSpeed`로 `anim.speed` 보정.
+- **VAT 다중 submesh 대응**: 여성 좀비는 submesh 2개라 Entities Graphics가 렌더를 자식 엔티티로 분리 → `[MaterialProperty]` 컴포넌트를 못 받아 **애니가 얼어붙는** 문제를 `VATSubmeshSyncSystem`으로 해결(자식 부착 + 부모 값 복사).
+- **정리**: 미사용 스폰수 슬라이더 UI 제거, 벤치 하니스 3종 삭제(케이스 스터디 종료 → 완성도 국면 전환. CSV·문서 근거는 유지).
 
 ---
 
@@ -158,4 +167,4 @@ flowchart TD
 - [x] 리더 **메시/애니 소스** — ✅ (2026-07-28 개정) **엘리트 = `TZ_Tank_01` · 보스 = `TZ_Hulk_01`** (Toon 좀비, scale 3/4). 초안 ARPGWarrior/Samurai는 테마 불일치+URP 흰색 렌더 문제로 폐기(§4 근거). ARPG는 인간형 티어 필요 시 보류 후보.
 - [x] 리더 **피격 판정** 방식 — ✅ **ECS 편입**(spatial hash). §6 결정: 리더도 Enemy 엔티티라 기존 `AttackResolveSystem`이 자동 판정. GO 콜라이더 별도판정 폐기.
 - [x] 플레이어 공격이 리더에 닿는 구조 — ✅ 기존 근접/광역 `AttackRequest` 그대로. 리더가 hash 안에 있어 반경 판정에 포함 → 재사용 범위 100%.
-- [ ] 리더 **Animator 동기** 방식 (ECS 상태 enum → `LeaderVisualBridge` CrossFade 매핑; STEP D)
+- [x] 리더 **Animator 동기** 방식 — ✅ 파라미터 구동으로 확정: `Leader_Hulk`/`Leader_Tank` 컨트롤러(Idle/Walk/Attack/Hit/Death)에 `LeaderVisualBridge`가 `Speed`(위치 델타)·`Die`(DeadTag)·`Hit`(Stun 엣지)·`Attack`(사거리+쿨)을 세팅. 루트모션은 끄고(위치는 ECS 소유) `anim.speed`로 발 속도만 보정.
