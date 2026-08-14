@@ -86,10 +86,23 @@ ECS만 멈추면 **플레이어와 리더 GO는 계속 움직여** 프리즈가 
 
 ## 6. 구현 단계
 
-1. **트리거(ECS)** — `DeathSystem`에서 리더 사망 첫 프레임에 `HitStop.Remaining = max(현재, 티어별 시간)`.
-2. **GO 프리즈 브릿지** — 플레이어/리더 애니 정지, 프리즈 해제 시 복구.
-3. **타격 연출** — 카메라 셰이크(Impulse, 티어별 강도) (+선택: 히트 플래시).
-4. **검증** — 보스 처치 → 세계 정지 + 셰이크, 병사 처치 → 아무 일 없음, 연속 처치에도 영구 프리즈 없음.
+1. ✅ **트리거(ECS)** — `DeathSystem` 사망 첫 프레임 엣지에서 `HitStop.Remaining = max(현재, 티어별 시간)`. `RequireForUpdate<HitStop>()`로 의존을 선언하고, 세팅 지점만 `TryGetSingletonRW`로 감쌌다(사망 처리가 연출에 인질로 잡히지 않게).
+2. ✅ **GO 프리즈 브릿지** — `HitStopBridge`가 프리즈 엣지에서 `PlayerController` 비활성 + `Animator.speed = 0`, 해제 시 복구. `LeaderVisualBridge`도 프리즈 중 리더 Animator 정지.
+3. ✅ **타격 연출** — Cinemachine Impulse(Source=Player, Listener=CinemachineCamera). 세기는 `Remaining`으로 티어 역산(보스 0.9 / 엘리트 0.35).
+4. ✅ **검증 완료** (아래 §6.1)
+
+### 6.1 검증 결과 (2026-08-07, 일시정지+프레임 스텝으로 결정적 측정)
+
+| 시나리오 | 결과 |
+|---|---|
+| **보스 처치** | `HitStop.Remaining = 0.200` 즉시 세팅 → 다음 프레임 플레이어 `enabled=False`·`anim.speed=0`, 리더 애니 0, **좀비 위치합 18094.8 고정**, **VAT 시계 20.517 고정** → 만료 후 전부 복구 |
+| **엘리트 처치** | `0.100` (티어별 강도 정확) |
+| **카메라 셰이크** | Impulse 오프셋 측정됨(0.115 → −0.222 → −0.344, Bump 곡선) |
+| **병사 30마리 동시 처치** | `HitStop = 0.000` 유지, 게임 계속 진행 — **트리거 안 함**(영구 프리즈 위험 없음) |
+
+> 관측 팁: 프리즈가 0.1~0.2초라 CLI 왕복(수 초)으로는 못 잡는다. `EditorApplication.isPaused` + `Step()`으로 프레임을 한 칸씩 밀며 재면 값이 그대로 남아 결정적으로 검증된다.
+>
+> 알려진 미세 지연: 플레이어 프리즈는 리더보다 **1프레임 늦다**(`HitStopBridge.Update`가 ECS `SimulationSystemGroup`보다 먼저 도는 프레임 때문). 0.016초라 체감 불가.
 
 ---
 
