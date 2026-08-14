@@ -21,6 +21,7 @@ namespace Simulation.Components
         EntityManager _em;
         EntityQuery _query;
         EntityQuery _playerQuery;
+        EntityQuery _hitStopQuery;
         bool _ready;
 
         readonly Dictionary<MonsterTier, MonsterDefinition> _defByTier = new();
@@ -54,6 +55,7 @@ namespace Simulation.Components
                 ComponentType.ReadOnly<TierTag>(),
                 ComponentType.ReadOnly<LocalTransform>());
             _playerQuery = _em.CreateEntityQuery(ComponentType.ReadOnly<PlayerState>());
+            _hitStopQuery = _em.CreateEntityQuery(ComponentType.ReadOnly<HitStop>());
 
             if (_leaderDefs != null)
                 foreach (var d in _leaderDefs)
@@ -71,6 +73,9 @@ namespace Simulation.Components
             Vector3 playerPos = Vector3.zero;
             bool hasPlayer = !_playerQuery.IsEmpty;
             if (hasPlayer) playerPos = (Vector3)_playerQuery.GetSingleton<PlayerState>().Position;
+
+            // 히트스톱 중엔 리더 GO 애니도 정지 — ECS는 이미 멈춰 있는데 GO만 움직이면 프리즈가 깨진다
+            bool frozen = !_hitStopQuery.IsEmpty && _hitStopQuery.GetSingleton<HitStop>().Remaining > 0f;
 
             _alive.Clear();
             var entities = _query.ToEntityArray(Allocator.Temp);
@@ -100,6 +105,13 @@ namespace Simulation.Components
                 }
 
                 v.go.transform.SetPositionAndRotation(pos, lt.Rotation);   // 팔로우
+
+                if (frozen)
+                {
+                    if (v.anim != null) v.anim.speed = 0f;   // 프리즈: 리더도 그 자리에 멈춤
+                    v.lastPos = pos;
+                    continue;
+                }
 
                 if (v.anim != null && v.anim.runtimeAnimatorController != null)
                 {
