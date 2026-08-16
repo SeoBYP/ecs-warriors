@@ -23,8 +23,22 @@ namespace Controller
         [SerializeField] private float _blendDamp = 0.1f;        // 애니 파라미터 보간 시간(부드러운 전환)
         [SerializeField] private Animator _animator;
 
+        [Header("회피(Space)")]
+        [SerializeField] private float _dodgeDistance = 5f;
+        [SerializeField] private float _dodgeDuration = 0.25f;    // ≈20m/s
+        [SerializeField] private float _dodgeCooldown = 0.8f;
+        [SerializeField] private float _dodgeIFrameGrace = 0.05f; // 대시 끝나고 살짝 더
+        [SerializeField] private Simulation.Components.PlayerHealthBridge _health;
+
         private PlayerAnimationEventListener _attackState;   // 공격 중 이동 잠금 판정
         private float _pitch;
+
+        private float _dodgeTimer;     // >0이면 대시 중(남은 시간)
+        private float _dodgeReadyAt;   // 쿨다운 만료 시각
+        private Vector3 _dodgeDir;     // 대시 방향(시작할 때 고정 — 중간에 마우스를 돌려도 궤적이 안 휜다)
+
+        /// <summary>대시 중인가. 루트모션(공격 러시)이 대시를 밀지 않도록 리스너가 참고한다.</summary>
+        public bool IsDodging => _dodgeTimer > 0f;
 
         private void Start()
         {
@@ -34,6 +48,7 @@ namespace Controller
                 if (t != null) _cameraTarget = t;
             }
             if (_animator == null) _animator = GetComponentInChildren<Animator>();
+            if (_health == null) _health = FindAnyObjectByType<Simulation.Components.PlayerHealthBridge>();
             _attackState = GetComponentInChildren<PlayerAnimationEventListener>();
             Cursor.lockState = CursorLockMode.Locked;   // 마우스 캡처 (Esc로 해제됨)
         }
@@ -62,6 +77,32 @@ namespace Controller
             float y = (kb.wKey.isPressed ? 1f : 0f) - (kb.sKey.isPressed ? 1f : 0f);
             Vector2 input = Vector2.ClampMagnitude(new Vector2(x, y), 1f);
             bool moving = input.sqrMagnitude > 0.0001f;
+
+            // 2.5) 회피(Space) — 대시 중엔 이동/공격 잠금보다 우선한다
+            if (_dodgeTimer > 0f)
+            {
+                transform.position += _dodgeDir * (_dodgeDistance / _dodgeDuration * dt);
+                _dodgeTimer -= dt;
+                if (_animator != null) _animator.SetFloat("Speed", 1f, _blendDamp, dt);   // 달리는 포즈로
+                return;                                   // 이번 프레임은 여기서 끝(시점 회전은 위에서 이미 처리)
+            }
+
+            if (kb.spaceKey.wasPressedThisFrame && Time.time >= _dodgeReadyAt)
+            {
+                // 방향은 시작 시점에 한 번만 고정. 입력이 없으면 정면으로 대시.
+                Vector3 dir = moving ? (transform.forward * input.y + transform.right * input.x) : transform.forward;
+                dir.y = 0f;
+                _dodgeDir = dir.sqrMagnitude > 0.0001f ? dir.normalized : transform.forward;
+                _dodgeTimer = _dodgeDuration;
+                _dodgeReadyAt = Time.time + _dodgeCooldown;
+
+                // 콤보 중에도 회피로 캔슬 — 무쌍류에선 공격에 갇혀 못 피하면 답답하다
+                if (_animator != null) _animator.ResetTrigger("Attack");
+
+                // 무적은 "만료 시각" 방식이라 무쌍난무 무적과 겹쳐도 서로 취소하지 않는다
+                if (_health != null) _health.AddInvulnerability(_dodgeDuration + _dodgeIFrameGrace);
+                return;
+            }
 
             // 평소 달리기, Shift 유지 시 걷기
             bool walking = kb.leftShiftKey.isPressed;

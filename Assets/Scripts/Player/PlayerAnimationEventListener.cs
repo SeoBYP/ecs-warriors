@@ -34,6 +34,7 @@ namespace Controller
         private EntityManager _em;
         private bool _ecsReady;
         private Transform _rootMover;   // 루트모션을 옮길 대상 = Player 루트 (ECS·카메라가 붙은 곳)
+        private PlayerController _dodge;   // 회피 중엔 루트모션을 양보한다
 
         // 본 이름 → Transform 캐시 (매 스윙마다 계층 탐색하지 않도록)
         private readonly Dictionary<string, Transform> _boneCache = new();
@@ -61,6 +62,7 @@ namespace Controller
             _animator = GetComponent<Animator>();
             _animator.applyRootMotion = true;   // 공격 러시용. OnAnimatorMove에서 공격 중에만 루트로 적용.
             _rootMover = transform.parent != null ? transform.parent : transform;   // Player 루트
+            _dodge = GetComponentInParent<PlayerController>();
         }
 
         private void Start()
@@ -85,6 +87,8 @@ namespace Controller
         private void OnAnimatorMove()
         {
             if (_animator == null || _rootMover == null) return;
+            // ★ 회피 중엔 루트모션을 적용하지 않는다 — 대시와 공격 러시가 같은 프레임에 위치를 밀면 서로 싸운다
+            if (_dodge != null && _dodge.IsDodging) return;
             if (IsAttacking)
                 _rootMover.position += _animator.deltaPosition;   // 회전은 마우스가 쥐고 있으므로 위치만
         }
