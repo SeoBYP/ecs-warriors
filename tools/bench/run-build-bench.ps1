@@ -31,7 +31,12 @@ param(
     [string]$OutDir = "docs/benchmarks/build",
 
     # 빌드를 건너뛰고 기존 빌드로 실행만(같은 브랜치 재측정용)
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+
+    # IL2CPP 대신 Mono로 빌드. Windows Build Support (IL2CPP) 모듈이 없을 때의 대안.
+    # Burst 잡(=ECS 핫패스)은 백엔드와 무관하게 동일하게 컴파일되지만,
+    # 매니지드 메인스레드 코드는 느려지므로 **Mono끼리만** 비교할 것.
+    [switch]$Mono
 )
 
 $ErrorActionPreference = "Stop"
@@ -75,12 +80,20 @@ try {
         if (-not $SkipBuild) {
             Write-Host "  빌드 중... (몇 분 걸립니다)"
             $log = "Builds/Bench/logs/build-$label.log"
-            # ⚠️ -nographics 금지: DOTS 엔티티 씬(SubScene) 빌드는 Scriptable Build Pipeline을 타는데,
-            #    그래픽 디바이스가 없으면 "Unable to build with the current configuration"으로 실패한다.
+            # -nographics를 쓰지 않는다: 엔티티 씬 콘텐츠 아카이브 빌드가 셰이더를 다루므로
+            # 널 디바이스에서 "GPU does not support ..." 경고가 쏟아진다.
+            # (참고: 예전에 겪은 "Unable to build with the current configuration" 실패의 원인은
+            #  -nographics가 아니라 IL2CPP 플레이어 모듈 미설치였다 — BenchmarkBuild.HasIl2CppPlayers 주석 참조)
+            $extra = if ($Mono) { @("-benchMono") } else { @() }
             & $unity -quit -batchmode -projectPath $repo `
                      -executeMethod Benchmark.EditorTools.BenchmarkBuild.BuildFromCLI `
-                     -logFile $log
-            if ($LASTEXITCODE -ne 0) { throw "빌드 실패($label). 로그: $log" }
+                     -logFile $log @extra
+            # ⚠️ Unity는 빌드가 실패해도 배치모드 종료코드 0을 준다 → 로그의 성공 마커로 판정한다.
+            if ($LASTEXITCODE -ne 0) { throw "Unity 실행 실패($label). 로그: $log" }
+            $marker = Select-String -Path $log -Pattern "\[BENCH-BUILD\] (성공|실패|IL2CPP 플레이어가)" -Encoding utf8 | Select-Object -Last 1
+            if (-not $marker -or $marker.Line -notmatch "성공") {
+                throw "빌드 실패($label): $(if ($marker) { $marker.Line.Trim() } else { '성공/실패 마커 없음' })`n  로그: $log"
+            }
 
             # 빌드가 ProjectSettings(스크립팅 백엔드·해상도)를 덮어써서 워킹트리가 더러워진다.
             # 그대로 두면 다음 변형의 git checkout이 막히므로 매번 되돌린다.

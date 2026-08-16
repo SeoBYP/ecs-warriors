@@ -37,8 +37,34 @@ namespace Benchmark.EditorTools
             Build(il2cpp: !mono, development: true);
         }
 
+        /// <summary>
+        /// IL2CPP **플레이어 변형**이 설치돼 있는지. 에디터의 `Data/il2cpp`(툴체인)만 보고 판단하면 안 된다 —
+        /// 실제 빌드에 필요한 건 `PlaybackEngines/windowsstandalonesupport/Variations/win64_player_*_il2cpp`다.
+        ///
+        /// 없으면 SBP가 `EnabledBuildButton()==false`로 판정해 엔티티 씬 콘텐츠 아카이브 빌드 단계에서
+        /// "Unable to build with the current configuration"이라는 **원인을 알 수 없는 메시지**로 죽는다.
+        /// (Windows Build Support (IL2CPP) 모듈 미설치가 진짜 원인)
+        /// </summary>
+        static bool HasIl2CppPlayers()
+        {
+            var dir = Path.Combine(EditorApplication.applicationContentsPath,
+                                   "PlaybackEngines/windowsstandalonesupport/Variations");
+            return Directory.Exists(dir) &&
+                   Directory.GetDirectories(dir).Any(d => d.Contains("il2cpp", System.StringComparison.OrdinalIgnoreCase));
+        }
+
         static void Build(bool il2cpp, bool development)
         {
+            if (il2cpp && !HasIl2CppPlayers())
+            {
+                Debug.LogError(
+                    "[BENCH-BUILD] IL2CPP 플레이어가 설치돼 있지 않습니다(Mono만 있음).\n" +
+                    "  → Unity Hub > Installs > 6000.5.4f1 > Add modules > 'Windows Build Support (IL2CPP)' 설치\n" +
+                    "  → 또는 Mono로 재기: 메뉴 Tools/Benchmark/Build Player (Mono ...) · CLI 인자 -benchMono · 스크립트 -Mono\n" +
+                    "  (이 검사가 없으면 SBP가 'Unable to build with the current configuration'으로만 죽어 원인을 알 수 없다)");
+                return;
+            }
+
             var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
             if (scenes.Length == 0)
             {
