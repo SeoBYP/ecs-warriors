@@ -20,6 +20,8 @@ namespace Simulation.Components
         [SerializeField] private float _areaAttackCoolTime = 2f;
         [SerializeField] private float _areaAttackKnockbackScale = 5f;
         [SerializeField] private float _areaAttackStunDuration = 0.5f;
+        [Tooltip("우클릭 공격의 띄우기 초속(m/s). 0이면 안 띄움. 9면 약 1.8m 높이까지.")]
+        [SerializeField] private float _areaAttackLaunchY = 9f;
         
         private float _normalAttackTimer = 0.0f;
         private float _areaAttackTimer = 0.0f;
@@ -79,6 +81,7 @@ namespace Simulation.Components
                 Damage = _areaAttackDamage,
                 KnockbackScale = _areaAttackKnockbackScale,
                 StunDuration = _areaAttackStunDuration,
+                LaunchY = _areaAttackLaunchY,                   // ★ 우클릭 = 띄우기 공격
             });
             _areaAttackTimer = _areaAttackCoolTime;
         }
