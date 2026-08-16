@@ -9,5 +9,6 @@ namespace Simulation.Components
         public float3 SourcePos;
         public float KnockbackScale;
         public float StunDuration;
+        public float LaunchY;        // >0이면 이 초속으로 띄운다(공중 콤보)
     }
 }

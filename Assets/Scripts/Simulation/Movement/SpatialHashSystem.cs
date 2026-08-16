@@ -97,6 +97,8 @@ namespace Simulation.Systems
                     {
                         do {
                             float3 diff = me - other.Position;
+                            diff.y = 0f;                            // ★ 밀어내기는 수평만 — Y는 AirborneSystem 소유.
+                                                                    //   3D로 두면 밀집한 좀비가 서로를 위로 밀어 올린다.
                             float d = math.length(diff);
                             if (d > 0.0001f && d < Radius)          // 자기 자신(d≈0) 제외 + 반경 내만
                                 push += diff / d * (1f - d / Radius);  // 가까울수록 세게

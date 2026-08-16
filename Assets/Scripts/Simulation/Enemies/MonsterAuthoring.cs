@@ -45,6 +45,8 @@ namespace Simulation.Components
             AddBuffer<DamageEvent>(entity);
             AddComponent(entity, new Knockback());   // 기본값 0 = 넉백 아님
             AddComponent(entity, new KnockbackFactor { Value = def ? def.knockbackFactor : 1f });
+            AddComponent<Airborne>(entity);
+            SetComponentEnabled<Airborne>(entity, false);   // 붙이되 꺼둔 채 시작(뜰 때만 켠다)
 
             AddComponent(entity, new Health { Value = hp });
             AddComponent<DeadTag>(entity);

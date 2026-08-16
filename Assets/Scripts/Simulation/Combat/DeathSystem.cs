@@ -34,12 +34,16 @@ namespace Simulation.Systems
 
  
             
-            foreach (var (timer, tr, kb, tier, e) in
-                     SystemAPI.Query<RefRW<DeathTimer>, RefRO<LocalTransform>, RefRO<Knockback>, RefRO<TierTag>>()
-                         .WithAll<DeadTag>().WithEntityAccess())    // 여기선 "켜진 것만"이 맞음(죽은 좀비)
+            foreach (var (timer, tr, kb, tier, flying, e) in
+                     SystemAPI.Query<RefRW<DeathTimer>, RefRO<LocalTransform>, RefRO<Knockback>, RefRO<TierTag>,
+                                     EnabledRefRO<Airborne>>()
+                         .WithAll<DeadTag>()
+                         .WithPresent<Airborne>()                  // 지상/공중 둘 다 봐야 하므로 Present
+                         .WithEntityAccess())    // DeadTag는 "켜진 것만"이 맞음(죽은 좀비)
             {
-                if (kb.ValueRO.Remaining > 0f) 
-                    continue; 
+                // 넉백/체공이 끝나야 사망 타이머 시작 — 공중에서 쓰러지는 모션이 나오면 어색하다
+                if (kb.ValueRO.Remaining > 0f || flying.ValueRO)
+                    continue;
                 
                 if (timer.ValueRO.Remaining < 0f)
                 {

@@ -25,6 +25,8 @@ namespace Simulation.Components
             AddBuffer<DamageEvent>(entity);
             AddComponent(entity, new Knockback());
             AddComponent(entity, new KnockbackFactor { Value = def.knockbackFactor });
+            AddComponent<Airborne>(entity);
+            SetComponentEnabled<Airborne>(entity, false);   // 리더는 knockbackFactor=0이라 사실상 안 뜬다
 
             AddComponent(entity, new Health { Value = def.hp });
             AddComponent<DeadTag>(entity);

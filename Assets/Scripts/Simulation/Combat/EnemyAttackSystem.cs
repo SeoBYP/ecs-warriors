@@ -48,7 +48,8 @@ namespace Simulation.Systems
     }
     
     [BurstCompile]
-    [WithDisabled(typeof(DeadTag))]  
+    [WithDisabled(typeof(DeadTag))]
+    [WithDisabled(typeof(Airborne))]   // ★ 떠 있는 동안엔 공격하지 못한다
     public partial  struct EnemyAttackJob : IJobEntity
     {
         public float DeltaTime;     // 잡에 넘길 데이터는 "필드"로

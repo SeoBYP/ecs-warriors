@@ -54,6 +54,7 @@ namespace Simulation.Systems
 
         void Execute(Entity e, in LocalTransform tf, in EnemyAttack atk, in MoveStats mv, in Stun stun,
             ref VATAnimParams ap, ref VATAnimStart ast, ref ZombieAnim za, in Knockback kb,
+            EnabledRefRO<Airborne> flying,
             EnabledRefRO<DeadTag> dead)
         {
             ref var prm = ref Table.Value.Params;          // ★ ref 유지
@@ -64,7 +65,8 @@ namespace Simulation.Systems
             //    "아직 걸어오는 중인데 공격모션" 이 안 나온다.
             //  ※ Idle은 "멈췄는데 사거리 밖" — 현재 값(Stop 1.5 < Range 2.0)에선 도달 불가.
             //    idle을 쓰려면 StopDistance를 Range보다 크게 하거나 별도 조건(쿨다운 등) 필요.
-            ZAnim want = kb.Remaining > 0f   ? ZAnim.Damage   // ★ 넉백 중엔 죽었어도 히트 모션
+            ZAnim want = flying.ValueRO      ? ZAnim.Damage   // ★ 체공 중엔 피격 모션(공중 전용 클립이 없다)
+                : kb.Remaining > 0f   ? ZAnim.Damage   // ★ 넉백 중엔 죽었어도 히트 모션
                 : dead.ValueRO        ? ZAnim.Death    // 넉백 끝나야 사망 모션
                 : stun.Remaining > 0f ? ZAnim.Damage
                 : d > AggroRange      ? ZAnim.Idle     // ★ 감지범위 밖 → 대기(제자리걷기 방지)
