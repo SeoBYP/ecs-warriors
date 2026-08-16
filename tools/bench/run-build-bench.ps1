@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   브랜치별 빌드 실측 자동화 — 각 변형 브랜치를 체크아웃해 IL2CPP 빌드하고, 빌드를 실행해 CSV를 모은다.
 
@@ -97,9 +97,10 @@ try {
                 throw "빌드 실패($label): $(if ($marker) { $marker.Line.Trim() } else { '성공/실패 마커 없음' })`n  로그: $log"
             }
 
-            # 빌드가 ProjectSettings(스크립팅 백엔드·해상도)를 덮어써서 워킹트리가 더러워진다.
-            # 그대로 두면 다음 변형의 git checkout이 막히므로 매번 되돌린다.
-            git checkout -- ProjectSettings/ProjectSettings.asset 2>$null
+            # 빌드는 ProjectSettings(스크립팅 백엔드·해상도)뿐 아니라 URP 에셋·UnityConnectSettings 등도
+            # 재직렬화해 워킹트리를 더럽힌다. 그대로 두면 다음 변형의 git checkout이 막힌다.
+            # 시작 시 트리가 깨끗함을 강제했으므로(위 사전 점검), 추적 파일 전체를 되돌려도 잃을 작업이 없다.
+            git checkout -- . 2>$null
         }
         if (-not (Test-Path $exe)) { throw "빌드 산출물이 없습니다: $exe" }
 
