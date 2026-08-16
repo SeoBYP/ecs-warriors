@@ -111,7 +111,8 @@ namespace Controller
             _activeUntil = Time.time + _duration;
             _pulsesLeft = Mathf.Max(1, _pulses);
             _nextPulseAt = Time.time;                              // 첫 펄스 즉시
-            if (_health != null) _health.IsInvulnerable = true;    // 발동 중 무적
+            // 발동 시간만큼 무적 요청(만료 시각 방식이라 회피 등 다른 소스와 겹쳐도 서로 취소하지 않는다)
+            if (_health != null) _health.AddInvulnerability(_duration);
         }
 
         void TickActive()
@@ -126,10 +127,7 @@ namespace Controller
             }
 
             if (Time.time >= _activeUntil)
-            {
-                _active = false;
-                if (_health != null) _health.IsInvulnerable = false;
-            }
+                _active = false;   // 무적은 만료 시각으로 알아서 풀린다(끄지 않는다 — 남의 무적을 취소할 수 있으므로)
         }
 
         /// <summary>광역 타격 1회 — 기존 AttackRequest 그대로(ECS 신규 코드 없음).</summary>
@@ -160,9 +158,7 @@ namespace Controller
 
         void OnDisable()
         {
-            // 발동 중 비활성/플레이 종료 시 무적이 남지 않게
-            if (_active && _health != null) _health.IsInvulnerable = false;
-            _active = false;
+            _active = false;   // 무적은 시간 만료라 따로 끌 필요가 없다
         }
     }
 }
