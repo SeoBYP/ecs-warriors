@@ -81,6 +81,10 @@ try {
                      -executeMethod Benchmark.EditorTools.BenchmarkBuild.BuildFromCLI `
                      -logFile $log
             if ($LASTEXITCODE -ne 0) { throw "빌드 실패($label). 로그: $log" }
+
+            # 빌드가 ProjectSettings(스크립팅 백엔드·해상도)를 덮어써서 워킹트리가 더러워진다.
+            # 그대로 두면 다음 변형의 git checkout이 막히므로 매번 되돌린다.
+            git checkout -- ProjectSettings/ProjectSettings.asset 2>$null
         }
         if (-not (Test-Path $exe)) { throw "빌드 산출물이 없습니다: $exe" }
 
