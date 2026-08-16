@@ -75,7 +75,9 @@ try {
         if (-not $SkipBuild) {
             Write-Host "  빌드 중... (몇 분 걸립니다)"
             $log = "Builds/Bench/logs/build-$label.log"
-            & $unity -quit -batchmode -nographics -projectPath $repo `
+            # ⚠️ -nographics 금지: DOTS 엔티티 씬(SubScene) 빌드는 Scriptable Build Pipeline을 타는데,
+            #    그래픽 디바이스가 없으면 "Unable to build with the current configuration"으로 실패한다.
+            & $unity -quit -batchmode -projectPath $repo `
                      -executeMethod Benchmark.EditorTools.BenchmarkBuild.BuildFromCLI `
                      -logFile $log
             if ($LASTEXITCODE -ne 0) { throw "빌드 실패($label). 로그: $log" }
