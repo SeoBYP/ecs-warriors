@@ -84,7 +84,9 @@ try {
             # 널 디바이스에서 "GPU does not support ..." 경고가 쏟아진다.
             # (참고: 예전에 겪은 "Unable to build with the current configuration" 실패의 원인은
             #  -nographics가 아니라 IL2CPP 플레이어 모듈 미설치였다 — BenchmarkBuild.HasIl2CppPlayers 주석 참조)
-            $extra = if ($Mono) { @("-benchMono") } else { @() }
+            # ⚠️ [string[]] 강제: PS 5.1은 1개짜리 배열을 문자열로 언랩하고,
+            #    문자열을 @로 스플랫하면 **글자 단위**로 펼쳐진다(-benchMono → -, b, e, n, ...).
+            [string[]]$extra = @(); if ($Mono) { $extra = @("-benchMono") }
             & $unity -quit -batchmode -projectPath $repo `
                      -executeMethod Benchmark.EditorTools.BenchmarkBuild.BuildFromCLI `
                      -logFile $log @extra
