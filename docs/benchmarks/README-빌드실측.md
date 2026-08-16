@@ -86,8 +86,68 @@ git commit -am "bench: cs-naive 변형(Burst off)"
 - 결과 UI(`StageUIBridge`) 비활성 — 리더를 지우면 즉시 CLEAR 판정이 떠서 오버레이·입력 정지가 측정에 섞인다
 - 스윕 시 **리더 포함 전 적 제거 후 정확히 N마리 생성**(원반 분포) — Week 7부터 스폰이 편성 1회성으로 바뀌어 `SpawnConfig.Count`로는 조절되지 않는다
 
-## 6. 결과를 어디에 쓰나
+## 6. 실측 결과 (2026-08-17)
+
+**측정 환경** — Ryzen 7 7800X3D (8C/16T) · RTX 4070 Ti SUPER · 32GB · Windows 11
+**빌드** — Mono · Development · 1920×1080 창모드 (IL2CPP는 §7 참조) · warmup 300 / sample 120
+
+| 적 수 | avg_ms | p95_ms | fps | main_ms | gpu_ms | 드로우콜 | tris |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1,000 | 1.86 | 6.81 | 538.8 | 1.43 | 0.31 | 7 | 351K |
+| 2,500 | 1.63 | 2.01 | 615.3 | 1.62 | 0.35 | 7 | 586K |
+| 5,000 | 1.93 | 2.46 | 517.9 | 1.92 | 0.50 | 7 | 1.32M |
+| 10,000 | 2.77 | 3.12 | 361.1 | 2.75 | 0.54 | 14 | 1.95M |
+
+원본: [`build/grid.csv`](build/grid.csv)
+
+읽는 법:
+- **1천 → 1만(10배)에 프레임타임 1.86 → 2.77ms (1.5배)** — grid 공간해시가 N에 거의 평평하다는 Week 5 결론이 빌드에서도 유지된다.
+- 드로우콜이 7~14개뿐인 건 BRG가 VAT 군중을 인스턴싱으로 묶기 때문. tris가 적 수보다 덜 늘어나는 건 프러스텀 컬링(적이 늘수록 스폰 원반이 넓어져 화면 밖 비중이 커짐).
+- `SpatialHashSystem_ms`·`MovementSystem_ms`가 카운트와 무관하게 고정인 건 **버그가 아니다** — 그 마커는 `OnUpdate`의 잡 *스케줄링*만 재고 실연산은 워커에서 돈다. 실비용은 `main_ms`에 잡힌다(Week 5에서 확립한 해석).
+- ⚠️ **에디터 수치와 직접 비교 금지.** 에디터엔 세이프티 체크·프로파일러·씬뷰 오버헤드가 얹혀 있다. Week 2~6 표(에디터)와 이 표(빌드)는 각각 자기들끼리만 비교할 것.
+
+## 7. IL2CPP로 재려면 — 모듈 설치가 먼저다 ★
+
+이 프로젝트 기본 백엔드는 IL2CPP지만, **Windows Build Support (IL2CPP) 모듈이 없으면 빌드가 실패한다.**
+그런데 실패 메시지가 원인을 전혀 알려주지 않는다:
+
+```
+InvalidOperationException: Unable to build with the current configuration, please check the Build Settings.
+  → ContentCatalogBuildUtility.BuildContentArchives failed with status 'Exception'
+```
+
+**추적 경로** (한 번 겪었으므로 기록해 둔다):
+
+```
+BuildPipeline.BuildPlayer
+ └ EntitySceneBuildPlayerProcessor.PrepareForBuild      (DOTS가 SubScene을 굽는 단계)
+    └ ContentCatalogBuildUtility.BuildContentArchives
+       └ SBP ContentPipeline.cs:106 → CanBuildPlayer() == false
+          └ WindowsStandaloneBuildWindowExtension.EnabledBuildButton() == false
+             └ m_HasIl2CppPlayers == false      ← 진짜 원인
+```
+
+- `Editor/Data/il2cpp`(툴체인)가 있다고 설치된 게 **아니다**. 필요한 건 플레이어 변형:
+  `Editor/Data/PlaybackEngines/windowsstandalonesupport/Variations/win64_player_*_il2cpp`
+- 라이선스·`-nographics`·배치모드는 **무관**했다(로그에 `Successfully resolved entitlement details`).
+- 지금은 `BenchmarkBuild.HasIl2CppPlayers()`가 빌드 전에 검사해 설치 안내를 출력한다.
+
+설치:
+
+```bash
+"C:\Program Files\Unity Hub\Unity Hub.exe" -- --headless install-modules --version 6000.5.4f1 --module windows-il2cpp --childModules
+```
+
+**Mono로 재도 되는 이유**: ECS 핫패스는 전부 Burst 잡이고, Burst는 스크립팅 백엔드와 무관하게 동일한 네이티브 코드를 낸다. 백엔드 차이는 주로 메인스레드 매니지드 코드(브리지·UI)에 나타난다. 단 **Mono끼리만** 비교할 것.
+
+## 8. 스크립트 함정 (같은 데 두 번 빠지지 않으려고)
+
+- **`.ps1`은 UTF-8 BOM으로 저장할 것.** PowerShell 5.1은 BOM 없는 스크립트를 ANSI(949)로 읽어 한글이 깨진다. 깨진 글자가 정규식에 들어가면 `(성공|실패)`가 `(?깃났|...)`가 되어 *Unrecognized grouping construct*로 죽는다.
+- **인자 배열은 `[string[]]`로 타입 고정.** PS 5.1은 1요소 배열을 문자열로 언랩하고, 문자열을 `@`로 스플랫하면 **글자 단위**로 펼쳐진다(`-benchMono` → `-`, `b`, `e`, `n`, …).
+- **Unity는 빌드가 실패해도 배치모드 종료코드 0을 준다.** 로그의 `[BENCH-BUILD] 성공` 마커로 판정해야 한다.
+- **빌드는 워킹트리를 더럽힌다** — `ProjectSettings`뿐 아니라 URP 에셋·`UnityConnectSettings`까지 재직렬화한다. 스크립트가 빌드 후 `git checkout -- .`로 되돌린다(시작 시 클린 트리를 강제하므로 안전).
+
+## 9. 결과를 어디에 쓰나
 
 - `docs/benchmarks/build/*.csv` — 빌드 실측 원본
 - README 수치 옆에 "(에디터)" / "(빌드)"를 병기하면 신뢰도가 올라간다
-- **측정 하드웨어(CPU/GPU 모델)를 반드시 함께 적을 것** — 지금 문서에 빠져 있다
