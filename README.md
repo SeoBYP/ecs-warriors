@@ -5,11 +5,15 @@
 ![Unity](https://img.shields.io/badge/Unity-6000.5.4f1-000000?logo=unity)
 ![Entities](https://img.shields.io/badge/Entities-6.5.0-blue)
 ![URP](https://img.shields.io/badge/URP-17.5.0-green)
-![Status](https://img.shields.io/badge/status-WIP%20·%20Week%206-orange)
+![Status](https://img.shields.io/badge/status-플레이_가능_·_Week_10-brightgreen)
+
+<!-- TODO: 폴리싱 후 히어로 GIF 교체 (보스 처치 → 히트스톱 → 슬로모 3~5초 루프) -->
 
 ## TL;DR
 
 > **적 10,000마리가 서로 회피하며 몰려들고, 플레이어와 서로 주고받는 양방향 전투 @ 107 FPS (9.37 ms)** — `IJobEntity` + Burst 병렬 잡 + Spatial Hash 근접 탐색.
+>
+> 그리고 지금은 **한 판이 성립하는 무쌍**이다 — 편성된 적진(**장수 11 + 병사 1,300**)에 뛰어들어 콤보·띄우기·무쌍난무로 쓸어담고, 장수를 베는 순간 **세계가 1초 멈추며**(히트스톱 → 보스는 슬로모), 전멸시키면 **MISSION CLEAR + 클리어 타임**이 뜬다.
 >
 > 이웃 탐색을 O(n²) 전수 검사에서 **Spatial Hash Grid로 바꿔 1만 마리에서 19.60 ms → 6.26 ms (3.13×)**. 더 중요한 건 **기울기** — 그리드 버전은 적이 1천이든 1만이든 프레임타임이 **평평하다**.
 > 그리고 그 위에 **전투 시스템(1만 마리 거리 판정 + 데미지 적용)을 얹어도 기울기는 여전히 0**이다. 기울기를 가진 건 O(n²) naive뿐(**+13.25**).
@@ -30,7 +34,22 @@
 1. **병목을 찾고 개선할 줄 안다** — 프로파일링 → 원인 진단 → 최적화 → 수치 개선의 사이클.
 2. **기술을 적재적소에 쓸 줄 안다** — 전부 ECS로 밀어붙이지 않고, 플레이어의 액션감은 GameObject로, 대량 군중만 ECS로 처리하는 판단.
 
-그래서 이 저장소의 **본체는 게임이 아니라 "최적화 케이스 스터디"** 입니다. 같은 로직을 단계별로 개선하며 프레임타임을 측정·기록하고, before/after 데이터로 실력을 증명합니다. (아래 [최적화 케이스 스터디](#최적화-케이스-스터디-) 참고.)
+그래서 이 저장소의 **1부는 "최적화 케이스 스터디"** 입니다. 같은 로직을 단계별로 개선하며 프레임타임을 측정·기록하고, before/after 데이터로 실력을 증명합니다. (아래 [최적화 케이스 스터디](#최적화-케이스-스터디-) 참고.)
+
+**2부는 "그 위에 올린 게임"** 입니다(Week 7~10). 케이스 스터디 ①~⑥의 데이터를 확보한 뒤, 목표를 *"벤치마크가 도는 씬"* 에서 **"한 판이 재밌는 무쌍"** 으로 옮겼습니다 — 편성·보스·손맛·특수기·게임 루프. 여기서의 관전 포인트는 성능이 아니라 **"이미 만든 것을 얼마나 재사용해 기능을 얹느냐"** 입니다. Week 3에서 공격을 *데이터*(`AttackRequest`)로 설계한 덕에 광역기 → 4타 콤보 → 무쌍난무 → 띄우기가 **전부 새 전투 시스템 없이** 붙었습니다.
+
+### 게임플레이 · 조작
+
+| 입력 | 동작 |
+|---|---|
+| `WASD` / 마우스 | 이동(스트레이프) · 시점 |
+| 좌클릭 | 4타 콤보 (히트 프레임 = 무기 궤적 판정) |
+| 우클릭 | 광역 **띄우기** — 반경 25 내 적을 공중으로 |
+| `R` | **무쌍난무** — 게이지 만땅 시 2.4초간 무적 + 8회 광역타 |
+| `Space` | **회피** — 대시 + i-frame(콤보 캔슬 가능) |
+| `Enter` | 결과 화면에서 리트라이 |
+
+**승리 = 장수 11기 전멸 / 패배 = 플레이어 HP 0.** 병사 1,300은 무한 스펙터클 담당.
 
 ---
 
@@ -159,7 +178,7 @@ flowchart TD
 
 ---
 
-## 개발 로드맵 (6~8주)
+## 개발 로드맵
 
 | 주차 | 내용 | 산출물 | 상태 |
 |---|---|---|---|
@@ -169,14 +188,18 @@ flowchart TD
 | **W3** | GO 플레이어 · 공격↔ECS 브릿지 · 데미지/사망 · 적→플레이어 공격 | 핵심 게임루프 성립 + **전투 A/B 벤치** | ✅ 완료 |
 | **W4** | 캐릭터·4타 콤보·무기 영역 판정·루트모션 · 광역기·넉백·경직 · 플레이어 사망 | 무쌍 손맛 + **⑥ 구조 변경 A/B (+33%)** | ✅ 완료 |
 | **W5** | 🔬 벤치 하니스 확장(시스템 마커 격리) · 단계별 래더 | 프로파일러 격리 + 4단 래더 CSV | ✅ 완료 |
-| **W6** | 애니메이션 · 폴리시 · 승리조건 | "완성"처럼 보이는 세로 슬라이스 | ⬜ |
-| **W7~8** | 문서화 · 데모 영상 · 배포 (버퍼) | 제출 가능한 포폴 | ⬜ |
+| **W6** | VAT 군중 애니메이션(1만 상태머신) · 넉백→사망 연출 | **⑤ VAT/SMR A/B 55×** | ✅ 완료 |
+| **W7** | 보스·엘리트 티어(하이브리드) · 편성 스폰 · 병사 다양화 | 장수 11 + 병사 1,300 편성 | ✅ 완료 |
+| **W8** | 히트스톱 손맛 · 카메라 셰이크 · 보스 슬로모 | 리더 킬 → 세계 정지 | ✅ 완료 |
+| **W9** | 무쌍난무 · 게임 루프(승/패·리트라이) · 회피 | **한 판이 성립** | ✅ 완료 |
+| **W10** | 저글링(띄우기) · Y 소유권 정리 | 공중 띄우기 + 3D 오염 제거 | ✅ 완료 |
+| **W11** | 콤보 커맨드 · 폴리싱(히트 플래시·사운드) · 데모 영상 · 빌드 | 제출 가능한 포폴 | ⬜ 진행 예정 |
 
 상세 태스크 분해는 [`docs/작업계획.md`](docs/작업계획.md) 참고. 주차별 진행 기록은 `docs/Week*.md` (예: [`Week0-DOTS셋업.md`](docs/Week0-DOTS셋업.md)).
 
 ---
 
-## 개발 진행
+## 1부 — 기반과 최적화 (Week 0~6)
 
 ### Week 0 — DOTS 셋업 & 첫 엔티티 렌더 ✅
 
@@ -280,48 +303,111 @@ flowchart TD
 
 ---
 
+## 2부 — 그 위에 올린 게임 (Week 7~10)
+
+케이스 스터디 데이터를 확보한 뒤 목표를 **"한 판이 재밌는 무쌍"** 으로 옮겼다. 이 구간의 관전 포인트는 프레임타임이 아니라 **재사용률**이다.
+
+### Week 7 — 보스·엘리트 티어 & 편성 스폰 ✅
+
+잡몹만 1만 마리인 전장에 **장수**를 세웠다. 핵심 질문은 하나였다 — **리더를 어느 세계에 둘 것인가.**
+
+<!-- TODO: 폴리싱 후 GIF (편성된 적진 + Hulk 보스) -->
+
+- **결정: 리더 = ECS 엔티티(시뮬) + GameObject(비주얼)** — 순수 GO 리더 안을 폐기했다. 리더도 `Enemy` 엔티티라 **기존 `AttackResolveSystem`이 그대로 때린다(새 피격 코드 0줄)**. GO는 `LeaderVisualBridge`가 엔티티를 따라다니며 렌더·Animator만 담당. 근거·트레이드오프는 [`Week7 §6 ADR`](docs/Week7-보스엘리트-편성스폰-설계.md).
+- **편성 스폰**: 보스 1(호위 300) + 엘리트 10(호위 100) = **리더 11기 + 병사 1,300**. `MonsterDefinition`/`SquadDefinition`/`StageDefinition` SO로 데이터 주도.
+- **병사 다양화**: 좀비 5종을 VAT로 굽고 **가중 랜덤 스폰** + 몬스터별 이동속도. 감지범위(40) 밖 병사는 대기 → 편성이 유지된다.
+- **발 속도 동기화**: 걷기 클립의 실제 지면속도(**1.154 m/s**)를 `averageSpeed`로 재고, `_AnimParams.z`(fps)를 이동속도 비례로 스케일 → **풋 슬라이딩 제거**. 속도를 바꿔도 보행 템포가 자동으로 맞는다.
+
+> 정직한 관찰: **여성 좀비 40%가 애니 정지 상태**였다. 여성 메시는 submesh가 2개라 Entities Graphics가 렌더를 **자식 엔티티로 분리**하는데, Baker가 루트에만 붙인 `[MaterialProperty]`(VAT 애니 값)를 자식이 못 받아 머티리얼 기본값으로 굳은 것. 렌더 엔티티 1,820개 중 **1,040개가 애니 값 없음**으로 계측돼 확정했고, 자식에 컴포넌트를 달아 부모 값을 복사하는 시스템으로 해결.
+
+### Week 8 — 히트스톱 손맛 ✅
+
+**장수를 벤 순간 세계가 멈춘다.** 무쌍의 "한 방의 카타르시스"를 만드는 구간.
+
+<!-- TODO: 폴리싱 후 GIF (보스 처치 순간 프리즈 + 셰이크 + 슬로모) -->
+
+- **프리즈는 글로벌 `timeScale` 금지** — 1만 마리가 계속 죽는 게임이라 겹치면 영구 정지가 된다. 대신 `HitStop` 싱글톤을 각 시스템이 읽어 **early-return**(이동·해시·넉백·VAT 시계). GO(플레이어·리더 애니)는 브릿지가 정지시킨다.
+- **트리거는 `DeathSystem`이 직접** — `DeathEventQueue`를 소비하는 안을 폐기했다. 킬카운트 브릿지가 이미 큐를 드레인하고 있어, 소비자가 둘이면 **"가끔 히트스톱이 안 걸리는"** 재현 어려운 버그가 된다. *큐 소비자는 1명, 나머지는 결과를 읽는다.*
+- **강도**: 보스 1.0s / 엘리트 0.7s / **병사는 트리거 안 함**. 카메라 셰이크는 Cinemachine Impulse, **보스만 슬로모**(0.3배 → 1.2s 램프).
+- **슬로모만 글로벌 `timeScale`을 쓴다** — 프리즈와 성격이 다르다. 보스 처치는 스테이지당 1회·한정 시간이고, 플레이어·카메라·군중이 **같이** 느려져야 자연스럽다.
+- **리더 넉백 면역**(`knockbackFactor` 데이터) — 넉백이 끝나야 사망 타이머가 시작돼 프리즈가 늦었다. 면역 후 **frame+14 → frame+1**(벤 즉시).
+
+> 정직한 관찰: 처음 플레이에서 "안 멈춘다"는 보고를 받았다. 트리거 버그를 의심했지만 **원인은 리더 HP 4000** — 죽일 수가 없어 트리거가 실전에서 한 번도 발동하지 못한 것이었다. 데미지를 직접 주입한 내 검증만으로는 못 잡는 종류의 문제.
+
+### Week 9 — 무쌍난무 · 게임 루프 · 회피 ✅
+
+**"데모"가 "게임"이 되는 주차.** 시그니처 기술과 시작·끝을 붙였다.
+
+<!-- TODO: 폴리싱 후 GIF (무쌍난무 발동 → 화면 정리) -->
+
+- **무쌍난무 = 광역기의 반복** — 킬로 게이지를 채워 `R`로 발동, 2.4초 동안 8펄스 + 무적. **ECS 신규 코드 0**(`AttackRequest`를 짧은 간격으로 여러 번 쏠 뿐). Week 3 "공격=데이터"의 **네 번째 배당**.
+- **게임 상태는 ECS가 소유** — `StageState` 싱글톤(Phase·남은 리더·경과시간)을 시스템이 갱신하고 UI는 **읽어서 그리기만** 한다. UI가 승리 조건을 판정하면 규칙이 늘어날 때 UI와 규칙이 얽힌다.
+- **회피**: `Space` 대시(5m/0.25s) + i-frame + 쿨다운, **콤보 캔슬 허용**.
+- **무적을 bool → 만료 시각으로** — 소유자가 둘(무쌍난무·회피)이 되는 순간 bool은 깨진다. 무쌍난무 무적 중 회피가 끝나면 **남은 무적까지 꺼진다.** `max(만료시각)`으로 합치면 서로 취소하지 않는다(히트스톱의 `max(Remaining)`과 같은 패턴).
+
+> 정직한 관찰 둘. **①** 리트라이가 **씬 리로드만으로는 안 된다** — ECS World는 씬과 무관하게 살아남아 싱글톤이 이전 판 값을 유지하고, 런타임 스폰 병사도 안 사라진다(리로드 직후 결과 화면이 다시 뜨고 병사가 두 배). **②** 그 정리 과정에서 `DestroyEntity(EntityQuery)`가 예외를 던졌다 — 여성 좀비의 `LinkedEntityGroup`(자식 렌더 엔티티)이 쿼리에 없어서. 배열 오버로드로 바꿔 해결. Week 7의 submesh 이슈가 두 번째로 청구서를 보냈다.
+
+### Week 10 — 저글링(띄우기) ✅
+
+계획서가 **"가장 큰 단일 조각"** 으로 표시해둔 작업. 이유는 코드량이 아니라 **모든 시스템이 "적은 바닥(y=0)"을 암묵적으로 전제**하고 있었기 때문이다.
+
+<!-- TODO: 폴리싱 후 GIF (우클릭 → 좀비 수백이 동시에 떠오르는 장면) -->
+
+- **새 파이프라인이 아니라 수직 성분 한 칸**: `AttackRequest.LaunchY` → `DamageEvent.LaunchY` → `Airborne`(enableable) + 중력·착지. 계획서가 예고한 *"넉백은 이미 있으니 수직만 추가"* 가 그대로 성립했다.
+- **Y 소유권을 `AirborneSystem` 하나로** 못박고, 다른 시스템은 수평만 건드리게 계약을 정리했다.
+- 체공 중엔 **지상 행동 금지**(추적·공격), 피격 모션 재생, 사망해도 **착지 후** 쓰러진다.
+- 리더는 `knockbackFactor=0`이라 **띄워지지도 않는다**(넉백 면역과 같은 계수를 재사용).
+
+> 정직한 관찰 — **함정 3개가 전부 "숨어 있던 3D"였다.** **①** `DamageApplyJob`에 enableable 컴포넌트를 받는 순간 **"꺼진"(=지상) 적이 쿼리에서 통째로 제외**돼 **데미지가 아예 안 들어갔다**(`[WithPresent]` 필요 — `DeadTag`에 이미 같은 이유로 붙어 있었다). **②** `MovementSystem`이 3D로 추적해, 루트모션으로 살짝 떠 있는 플레이어를 따라 **적이 공중으로 끌려 올라갔다.** **③** 분리(separation)도 3D라 밀집한 좀비가 서로를 **위로** 밀어 y가 무한 증가했다(maxY 5.5m). 새 축을 도입할 때 진짜 비용은 신규 시스템이 아니라 **기존 코드의 암묵적 전제를 찾아내는 것**이다.
+
+---
+
 ## 프로젝트 구조
+
+스크립트는 **타입별(Components/Systems)이 아니라 기능별**로 묶는다 — 한 기능의 컴포넌트·시스템·authoring이 한 폴더에 있어야 찾기 쉽다.
 
 ```
 Assets/
   Scripts/
     Simulation/                       # ECS 코어 (ECSWarriors.Simulation asmdef)
-      Components/                     #   Enemy · Velocity · MoveStats · SpawnConfig · HashedEnemy · SpatialHashMap
-                                      #   PlayerState(+IsDead) · AttackRequest · DamageEvent(버퍼, +넉백/경직) · Health · DeadTag(enableable)
-                                      #   DeathEvent/DeathEventQueue · EnemyAttack · PlayerDamageEvent/PlayerDamageQueue · HitTracker · Stun
-      SpatialHash.cs                  #   셀 좌표·해시 유틸 (빌드/조회 공유)
-      Authoring/                      #   SpawnAuthoring/Baker · MonsterAuthoring/Baker
+      Core/                           #   SpatialHash(셀·해시 유틸) · PlayerState(+IsDead) · PlayerStateSystem
+      Spawning/                       #   SpawnConfig · SpawnPrefab(가중 풀) · FormationSpawned(1회성 마커)
+                                      #   SpawnAuthoring · SpawnSystem(편성 스폰: 리더 주위 스쿼드)
+      Movement/                       #   MoveStats · SpatialHashMap · HashedEnemy
+                                      #   MovementSystem(수평 추적·감지범위) · SpatialHashSystem(+SeparationJob)
+      Combat/                         #   AttackRequest(반경·데미지·넉백·경직·LaunchY) · DamageEvent(버퍼)
+                                      #   Health · DeadTag(enableable) · DeathTimer · Knockback · KnockbackFactor
+                                      #   Stun · HitTracker · EnemyAttack · Airborne(enableable) · HitStop
+                                      #   AttackResolve/DamageApply/Death/EnemyAttack/Knockback/Airborne/HitStop 시스템
+      Enemies/                        #   Enemy · TierTag(Normal/Elite/Boss) · LeaderTag
+                                      #   MonsterAuthoring · LeaderAuthoring (스탯·티어를 SO에서 굽는다)
+      Animation/                      #   AnimClock · VATClipSet/VATClipTable(Blob) · ZombieAnim
+                                      #   ZombieAnimSystem(상태머신) · VatAnimClockSystem(프리즈 가능한 전역 시계)
+                                      #   VATSubmeshSyncSystem(다중 submesh 자식 렌더 엔티티 동기화)
+      Stage/                          #   StageState(Phase·남은 리더·경과시간) · StageStateSystem(승/패 판정)
+      Data/                           #   MonsterDefinition · SquadDefinition · StageDefinition · SpawnTable (SO)
       Bridge/                         #   PlayerStateBridge · PlayerAttackBridge (GO→ECS)
-                                      #   DeathEventBridge · PlayerHealthBridge (ECS→GO, NativeQueue 소비)
-      Systems/                        #   SpawnSystem · MovementSystem · SpatialHashSystem(+SeparationJob)
-                                      #   PlayerStateSystem · AttackResolveSystem · DamageApplySystem
-                                      #   DeathSystem(사망 연출 지연) · EnemyAttackSystem
-                                      #   ZombieAnimSystem(VAT 상태머신) · KnockbackSystem
-      VAT/                            #   VATClipSet(클립 메타 SO) · VATClipTable(Blob 싱글톤+authoring)
-                                      #   VATAnimParams/VATAnimStart(MaterialProperty) · ZombieAnim · Knockback · DeathTimer
+                                      #   DeathEventBridge · PlayerHealthBridge(i-frame) (ECS→GO, NativeQueue 소비)
+                                      #   LeaderVisualBridge (리더 GO 스폰·추적·Animator 구동·HP바)
+    Player/                           # PlayerController(이동·회피) · PlayerAnimationEventListener(콤보 히트프레임)
+    Gameplay/                         # HitStopBridge(프리즈·셰이크·슬로모) · MusouGaugeBridge(무쌍난무)
+                                      # StageUIBridge(HUD·결과·리트라이)
+    UI/                               # FpsOverlay
     Editor/                           # VATBaker(멀티클립 스택 베이커) · VATBakerWindow
   Shaders/
-    VAT_Zombie.shader                 # URP. 정점단계 텍스처 lookup으로 애니 재생 + DOTS 인스턴싱
-    Controller/                       # PlayerController · PlayerAnimationEventListener · ResetTriggerOnEnter (GO 플레이어·4타 콤보)
-    UI/                               # FpsOverlay · SpawnCountSlider (MonoBehaviour)
-    Benchmark/                        # BenchmarkHarness (적 수 자동 스윕 + ProfilerRecorder 시스템 마커 격리) · AoeSpikeHarness (동시 사망 스파이크)
-  Prefabs/
-    Monster.prefab                    # 스폰 원본(콜라이더 제거)
+    VAT_Zombie.shader                 # URP. 정점단계 텍스처 lookup으로 애니 재생 + DOTS 인스턴싱(_AnimTime으로 프리즈)
+  Data/
+    Monsters/                         # 몬스터·편성·스테이지 SO
+    VAT/                              # VAT 클립셋·머티리얼 (좀비 5종)
+    Animators/                        # 리더용 컨트롤러(Leader_Hulk · Leader_Tank)
+  Prefabs/                            # Monster.prefab + 변종 4종
   Scenes/
-    Main.unity                        # EnemySubScene(SubScene) — Spawner 포함
+    Main.unity                        # EnemySubScene(SubScene) — Spawner · 리더 11기 배치
 docs/
-  작업계획.md              # 실행 계획 (기획 → 작업 분해)
-  협업방식.md              # 작업 합의 (짝 프로그래밍 + 검수)
-  Week0-DOTS셋업.md        # 주차별 진행 기록
-  Week1-스폰.md
-  Week2-이동-SpatialHash.md
-  Week3-전투-양방향브릿지.md
-  Week4-광역기-구조변경벤치.md
-  Week4-캐릭터-콤보-루트모션.md
-  Week5-벤치하니스-프로파일러격리.md
-  Week6-VAT-군중애니메이션.md
-  benchmarks/             # 측정 원본 CSV (week2-separation · week3-combat-ab · week4-deadtag-ab · week5-ladder)
-  images/                 # 진행 스크린샷
+  작업계획.md · 협업방식.md
+  Week0~Week10*.md         # 주차별 진행 기록 + 설계·결정 기록(ADR)
+  benchmarks/              # 측정 원본 CSV (week2-separation · week3-combat-ab · week4-deadtag-ab · week5-ladder · week6-vat-ab)
+  images/                  # 진행 스크린샷
 ```
 
 **브랜치**: `main`(최신 통합) · `bench/01-naive`(벤치마크 O(n²) 기준선 — 머지하지 않고 비교용 보존) · `bench/05-deadtag-structural`(⑥ DeadTag Enableable vs AddComponent A/B용) · `bench/week5-naive-grid`(cs-naive/single/parallel 변형 — 단계별 래더 측정용)
@@ -337,16 +423,41 @@ git clone https://github.com/SeoBYP/ecs-warriors.git
 ```
 
 1. Unity Hub에서 프로젝트를 연다 (패키지는 최초 실행 시 자동 복원).
-2. `Assets/Scenes/Main.unity`(현재는 `SampleScene.unity`)를 연다.
-3. Play.
+2. `Assets/Scenes/Main.unity`를 연다.
+3. Play → `WASD` 이동, 좌클릭 콤보, 우클릭 띄우기, `R` 무쌍난무, `Space` 회피.
+
+> 적 수는 `EnemySubScene`의 `SpawnAuthoring`(편성별 호위 수·반경)에서, 손맛 수치는 `DeathSystem`(프리즈 길이)·`HitStopBridge`(셰이크·슬로모)·`MusouGaugeBridge`(무쌍난무) 인스펙터에서 조절한다.
 
 ---
 
 ## 문서
 
-- [`docs/작업계획.md`](docs/작업계획.md) — 개발 작업 계획서 (현재 상태 · 아키텍처 확정 · 주차별 실행 태스크 · 벤치마크 하니스)
+- [`docs/작업계획.md`](docs/작업계획.md) — 개발 작업 계획서 (현재 상태 · 아키텍처 확정 · 주차별 실행 태스크 · 백로그)
+
+**주차별 기록 · 설계 결정(ADR)**
+
+| 문서 | 핵심 내용 |
+|---|---|
+| [Week 2](docs/Week2-이동-SpatialHash.md) · [Week 3](docs/Week3-전투-양방향브릿지.md) | Spatial Hash 벤치 ④ · GO↔ECS 브릿지 3종 + 전투 A/B |
+| [Week 4 (벤치)](docs/Week4-광역기-구조변경벤치.md) · [Week 4 (액션)](docs/Week4-캐릭터-콤보-루트모션.md) | 구조 변경 A/B ⑥ · 4타 콤보·무기 영역 판정 |
+| [Week 5](docs/Week5-벤치하니스-프로파일러격리.md) · [Week 6](docs/Week6-VAT-군중애니메이션.md) | 4단 래더(기법별 격리) · VAT 군중 애니 ⑤ |
+| [Week 7](docs/Week7-보스엘리트-편성스폰-설계.md) | **리더 아키텍처 ADR**(ECS 엔티티 + GO 비주얼) · 편성 스폰 |
+| [Week 8](docs/Week8-히트스톱-손맛.md) | **히트스톱 트리거 위치 ADR** · 영구 프리즈 함정 · 폴리싱 백로그 |
+| [Week 9](docs/Week9-무쌍난무-게임루프.md) | 무쌍난무(재사용) · **게임 상태 소유권 ADR** · i-frame 설계 |
+| [Week 10](docs/Week10-저글링-콤보커맨드.md) | 띄우기 + **3D 오염 3건** · 콤보 커맨드 설계(보류) |
+
+> 각 문서는 "무엇을 만들었나"보다 **"왜 그렇게 결정했나"**(후보 비교 → 채택 이유 → 감수한 트레이드오프)에 지면을 씁니다.
+
 - 기획·설계 원문 및 개발 일지는 별도 Obsidian 볼트에서 관리.
 
 ---
 
-*이 프로젝트는 개발 중(WIP)입니다. 데모 GIF·벤치마크 그래프·기술 결정 Q&A는 개발 진행에 따라 이 문서에 채워집니다.*
+## 남은 작업 (W11)
+
+- **콤보 커맨드** — 진삼국무쌍식 "약공 N타 → 강공" 파생(설계·클립 조사 완료, [Week 10 §2](docs/Week10-저글링-콤보커맨드.md))
+- **폴리싱** — 히트 플래시(타격 가독성) · 리더 피격 반응 · 사운드 · 강도 튜닝
+- **마감** — 데모 영상(60~90초) · itch.io 빌드 · 히어로 GIF 교체
+
+---
+
+*개발 중(WIP) — 게임플레이 GIF·데모 영상은 폴리싱 완료 후 채웁니다.*
