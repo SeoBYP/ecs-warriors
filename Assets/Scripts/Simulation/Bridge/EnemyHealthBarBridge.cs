@@ -1,5 +1,6 @@
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -16,7 +17,8 @@ namespace Simulation.Components
     public class EnemyHealthBarBridge : MonoBehaviour
     {
         [Header("치수 (m)")]
-        [SerializeField] float _height = 2.0f;       // 머리 위 오프셋 — 엔티티 스케일에 비례
+        [Tooltip("머리 끝에서 띄울 간격. 높이 자체는 엔티티 렌더 바운즈에서 읽으므로 스케일이 달라도 따라간다.")]
+        [SerializeField] float _margin = 0.18f;
         [SerializeField] float _width = 0.45f;
         [SerializeField] float _thickness = 0.06f;
 
@@ -48,7 +50,7 @@ namespace Simulation.Components
 
             // 리더는 제외(자기 캔버스 바가 있다), 죽은 적도 제외
             _query = new EntityQueryBuilder(Allocator.Temp)
-                .WithAll<Enemy, LocalTransform, Health>()
+                .WithAll<Enemy, LocalTransform, Health, WorldRenderBounds>()
                 .WithNone<LeaderTag>()
                 .WithDisabled<DeadTag>()
                 .Build(_em);
@@ -74,6 +76,7 @@ namespace Simulation.Components
 
             var lts = _query.ToComponentDataArray<LocalTransform>(Allocator.Temp);
             var hps = _query.ToComponentDataArray<Health>(Allocator.Temp);
+            var bnds = _query.ToComponentDataArray<WorldRenderBounds>(Allocator.Temp);   // 머리 끝 = 바운즈 상단
 
             Quaternion rot = cam.transform.rotation;   // 빌보드
             Vector3 camPos = cam.transform.position;
@@ -88,7 +91,9 @@ namespace Simulation.Components
                 float ratio = Mathf.Clamp01(h.Value / (float)h.Max);
                 if (_hideWhenFull && ratio >= 0.999f) continue;
 
-                Vector3 p = (Vector3)lts[i].Position + Vector3.up * (_height * lts[i].Scale);
+                var aabb = bnds[i].Value;
+                Vector3 p = (Vector3)lts[i].Position;
+                p.y = aabb.Center.y + aabb.Extents.y + _margin;   // 고정 높이가 아니라 실제 머리 끝 기준
                 if ((p - camPos).sqrMagnitude > maxSq) continue;
 
                 _bg[n] = Matrix4x4.TRS(p, rot, new Vector3(_width, _thickness, 1f));
@@ -102,6 +107,7 @@ namespace Simulation.Components
 
             lts.Dispose();
             hps.Dispose();
+            bnds.Dispose();
         }
 
         void Flush(int n)

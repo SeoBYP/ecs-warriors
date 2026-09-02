@@ -2008,7 +2008,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b32c258ffcd15814b87db128581700c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Components.EnemyHealthBarBridge
-  _height: 2
+  _margin: 0.18
   _width: 0.45
   _thickness: 0.06
   _maxDistance: 18
