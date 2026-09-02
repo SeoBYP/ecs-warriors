@@ -1336,7 +1336,7 @@ MonoBehaviour:
   _gaugeBar: {fileID: 1868885980}
   _gaugeFill: {fileID: 679718177}
   _activateKey: 32
-  _pulseRadius: 18
+  _pulseRadius: 2.5
   _pulseDamage: 40
   _pulseKnockback: 0
   _pulseStun: 0.4
@@ -2017,6 +2017,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Components.EnemyHealthBarBridge
   _margin: 0.18
+  _fallbackTop: 1.43
   _width: 0.45
   _thickness: 0.06
   _maxDistance: 18

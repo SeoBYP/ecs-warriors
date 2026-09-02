@@ -29,7 +29,7 @@ namespace Controller
 
         [Header("발동")]
         [SerializeField] private Key _activateKey = Key.R;
-        [SerializeField] private float _pulseRadius = 18f;
+        [SerializeField] private float _pulseRadius = 2.5f;   // 평타(PlayerAnimationEventListener._attackRadius)와 동일
         [Tooltip("평타와 같은 일반 공격 판정 — 넉백 0(강타가 아님), 데미지·경직도 콤보 1~3타와 동일.")]
         [SerializeField] private int _pulseDamage = 40;
         [SerializeField] private float _pulseKnockback = 0f;
