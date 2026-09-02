@@ -1219,7 +1219,7 @@ MonoBehaviour:
   _areaAttackCoolTime: 2
   _areaAttackKnockbackScale: 5
   _areaAttackStunDuration: 0.5
-  _areaAttackLaunchY: 9
+  _areaAttackLaunchY: 0
 --- !u!114 &645119404
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1958,6 +1958,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1017103340}
   - component: {fileID: 1017103339}
+  - component: {fileID: 1017103341}
   m_Layer: 0
   m_Name: LeaderVisualBridge
   m_TagString: Untagged
@@ -1995,6 +1996,25 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1017103341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1017103338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b32c258ffcd15814b87db128581700c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ECSWarriors.Simulation::Simulation.Components.EnemyHealthBarBridge
+  _height: 2
+  _width: 0.45
+  _thickness: 0.06
+  _maxDistance: 18
+  _hideWhenFull: 0
+  _bgColor: {r: 0.06, g: 0.06, b: 0.06, a: 1}
+  _fillColor: {r: 0.9, g: 0.25, b: 0.2, a: 1}
 --- !u!1 &1035654429
 GameObject:
   m_ObjectHideFlags: 0

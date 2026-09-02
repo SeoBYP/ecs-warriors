@@ -48,7 +48,7 @@ namespace Simulation.Components
             AddComponent<Airborne>(entity);
             SetComponentEnabled<Airborne>(entity, false);   // 붙이되 꺼둔 채 시작(뜰 때만 켠다)
 
-            AddComponent(entity, new Health { Value = hp });
+            AddComponent(entity, new Health { Value = hp, Max = hp });
             AddComponent<DeadTag>(entity);
             SetComponentEnabled<DeadTag>(entity, false);   // ★ 붙이되 꺼둔 채 시작
             AddComponent(entity, new DeathTimer { Remaining = -1f });

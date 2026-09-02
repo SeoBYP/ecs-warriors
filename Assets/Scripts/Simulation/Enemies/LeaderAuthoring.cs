@@ -28,7 +28,7 @@ namespace Simulation.Components
             AddComponent<Airborne>(entity);
             SetComponentEnabled<Airborne>(entity, false);   // 리더는 knockbackFactor=0이라 사실상 안 뜬다
 
-            AddComponent(entity, new Health { Value = def.hp });
+            AddComponent(entity, new Health { Value = def.hp, Max = def.hp });
             AddComponent<DeadTag>(entity);
             SetComponentEnabled<DeadTag>(entity, false);
             AddComponent(entity, new DeathTimer { Remaining = -1f });
