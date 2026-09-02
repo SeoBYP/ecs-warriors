@@ -46,8 +46,15 @@ namespace Controller
         public bool IsSwinging { get; private set; }
         public int SwingId { get; private set; }
 
-        // 현재 콤보 상태(Combo1~4)인가. PlayerController의 이동 잠금 + 루트모션 적용 판정에 쓴다.
-        public bool IsAttacking
+        // 무쌍난무 상태(MusouB1~B5) 해시 — 이름 비교를 매 프레임 5번 하지 않으려고 미리 굽는다
+        private static readonly int[] MusouHashes =
+        {
+            Animator.StringToHash("MusouB1"), Animator.StringToHash("MusouB2"), Animator.StringToHash("MusouB3"),
+            Animator.StringToHash("MusouB4"), Animator.StringToHash("MusouB5"),
+        };
+
+        /// <summary>콤보(Combo1~4) 재생 중인가. 루트모션 러시는 이때만 적용한다.</summary>
+        public bool IsCombo
         {
             get
             {
@@ -56,6 +63,21 @@ namespace Controller
                 return st.IsName("Combo1") || st.IsName("Combo2") || st.IsName("Combo3") || st.IsName("Combo4");
             }
         }
+
+        /// <summary>무쌍난무 클립 재생 중인가.</summary>
+        public bool IsMusou
+        {
+            get
+            {
+                if (_animator == null) return false;
+                int h = _animator.GetCurrentAnimatorStateInfo(0).shortNameHash;
+                for (int i = 0; i < MusouHashes.Length; i++) if (h == MusouHashes[i]) return true;
+                return false;
+            }
+        }
+
+        /// <summary>이동을 잠가야 하는가 — 콤보든 무쌍이든 제자리에서 휘두른다.</summary>
+        public bool IsAttacking => IsCombo || IsMusou;
 
         private void Awake()
         {
@@ -73,6 +95,9 @@ namespace Controller
 
         private void Update()
         {
+            // 무쌍난무 중엔 평타를 막는다 — 트리거가 걸리면 무쌍 클립이 콤보로 끊긴다
+            if (IsMusou) return;
+
             var mouse = Mouse.current;
             if (mouse != null && mouse.leftButton.wasPressedThisFrame)
             {
@@ -89,6 +114,7 @@ namespace Controller
             if (_animator == null || _rootMover == null) return;
             // ★ 회피 중엔 루트모션을 적용하지 않는다 — 대시와 공격 러시가 같은 프레임에 위치를 밀면 서로 싸운다
             if (_dodge != null && _dodge.IsDodging) return;
+            // 무쌍도 포함 — 10타를 휘두르며 자연스럽게 전진한다(클립에 박힌 전진을 그대로 쓴다)
             if (IsAttacking)
                 _rootMover.position += _animator.deltaPosition;   // 회전은 마우스가 쥐고 있으므로 위치만
         }
