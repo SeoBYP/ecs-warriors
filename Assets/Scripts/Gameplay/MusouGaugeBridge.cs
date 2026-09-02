@@ -30,20 +30,26 @@ namespace Controller
         [Header("발동")]
         [SerializeField] private Key _activateKey = Key.R;
         [SerializeField] private float _pulseRadius = 18f;
-        [SerializeField] private int _pulseDamage = 120;
-        [SerializeField] private float _pulseKnockback = 4f;
-        [SerializeField] private float _pulseStun = 0.6f;
+        [Tooltip("평타와 같은 일반 공격 판정 — 넉백 0(강타가 아님), 데미지·경직도 콤보 1~3타와 동일.")]
+        [SerializeField] private int _pulseDamage = 40;
+        [SerializeField] private float _pulseKnockback = 0f;
+        [SerializeField] private float _pulseStun = 0.4f;
 
         [Header("연출 — ComboB1~B5 × 2사이클")]
         [SerializeField] private Animator _animator;
-        [Tooltip("컨트롤러의 무쌍 상태 이름. 이 순서대로 CrossFade하고, 전체를 _cycles번 반복한다.")]
-        [SerializeField] private string[] _musouStates = { "MusouB1", "MusouB2", "MusouB3", "MusouB4", "MusouB5" };
-        [SerializeField] private int _cycles = 2;
+        [Tooltip("반복 구간. 이 순서를 _cycles번 돌고 _finisherState로 끝낸다.")]
+        [SerializeField] private string[] _musouStates = { "MusouB2", "MusouB4" };
+        [SerializeField] private int _cycles = 5;
+        [Tooltip("마무리 일격 — 반복 구간과 달리 끝까지 재생한다.")]
+        [SerializeField] private string _finisherState = "MusouB5";
         [Tooltip("재생 배속. 전체 길이와 펄스 간격이 함께 줄어든다(1 = 클립 원속도).")]
         [SerializeField] private float _animSpeed = 1f;
         [Tooltip("클립 어느 지점에서 타격 판정을 낼지(0~1). 대부분 앞부분이 준비동작이라 중반 직전.")]
         [SerializeField] private float _hitAtNormalized = 0.35f;
-        [SerializeField] private float _crossFade = 0.08f;
+        [Tooltip("클립을 어디까지 쓰고 다음으로 넘길지(0~1). 스윙이 끝나면 마무리 동작을 버리고 바로 다음 타로 — 속도감의 핵심.")]
+        [SerializeField] private float _clipUseNormalized = 0.6f;
+        [Tooltip("상태 전환 블렌드(초). 잘라 붙인 클립 사이를 이걸로 메운다.")]
+        [SerializeField] private float _crossFade = 0.12f;
 
         [SerializeField] private CinemachineImpulseSource _impulse;
         [SerializeField] private float _pulseShake = 0.25f;
@@ -133,17 +139,27 @@ namespace Controller
 
             var clips = _animator.runtimeAnimatorController.animationClips;
             float speed = Mathf.Max(0.1f, _animSpeed);
+            float use = Mathf.Clamp(_clipUseNormalized, 0.1f, 1f);
             float t = 0f;
 
             for (int c = 0; c < Mathf.Max(1, _cycles); c++)
                 foreach (var state in _musouStates)
-                {
-                    float len = ClipLengthForState(clips, state) / speed;
-                    if (len <= 0f) continue;
-                    _steps.Add(new Step { State = state, PlayAt = t, HitAt = t + len * Mathf.Clamp01(_hitAtNormalized) });
-                    t += len;
-                }
+                    t = AddStep(clips, state, t, speed, use);
+
+            // 마무리는 끝까지 재생한다(잘라내면 기술이 끊긴 것처럼 보인다)
+            if (!string.IsNullOrEmpty(_finisherState))
+                t = AddStep(clips, _finisherState, t, speed, 1f);
+
             Duration = t;
+        }
+
+        /// <summary>스텝 1개 추가. 반환값은 다음 스텝의 시작 시각.</summary>
+        float AddStep(AnimationClip[] clips, string state, float t, float speed, float use)
+        {
+            float len = ClipLengthForState(clips, state) / speed;
+            if (len <= 0f) return t;
+            _steps.Add(new Step { State = state, PlayAt = t, HitAt = t + len * Mathf.Clamp01(_hitAtNormalized) });
+            return t + len * use;   // ★ use<1 이면 클립 뒷부분(마무리 동작)을 버리고 다음 타로 넘어간다
         }
 
         /// <summary>상태 이름(MusouB3) → 그 상태가 쓰는 클립(ARPG_Warrior_Attack_ComboB3)의 길이.</summary>

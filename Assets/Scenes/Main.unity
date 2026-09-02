@@ -1336,12 +1336,20 @@ MonoBehaviour:
   _gaugeBar: {fileID: 1868885980}
   _gaugeFill: {fileID: 679718177}
   _activateKey: 32
-  _duration: 2.4
-  _pulses: 8
   _pulseRadius: 18
-  _pulseDamage: 120
-  _pulseKnockback: 4
-  _pulseStun: 0.6
+  _pulseDamage: 40
+  _pulseKnockback: 0
+  _pulseStun: 0.4
+  _animator: {fileID: 0}
+  _musouStates:
+  - MusouB2
+  - MusouB4
+  _cycles: 5
+  _finisherState: MusouB5
+  _animSpeed: 1
+  _hitAtNormalized: 0.35
+  _clipUseNormalized: 0.6
+  _crossFade: 0.12
   _impulse: {fileID: 645119406}
   _pulseShake: 0.25
 --- !u!1 &679718176
